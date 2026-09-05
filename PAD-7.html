@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#1c1610" />
+  <title>PAD-7 Firing Room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Teko:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --paper: #e8d9b4;
+      --paper-2: #d7c49a;
+      --rule: #c3b089;
+      --ink: #1b1712;
+      --ink-dim: #5c5346;
+      --oak: #1c1610;
+      --oak-2: #2c241a;
+      --brass: #c4a15a;
+      --abort: #a31b12;
+      --go: #2c6b43;
+      --caution: #c49a2a;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100dvh; margin: 0; overflow: hidden; }
+    body {
+      background: var(--oak);
+      color: var(--ink);
+      font-family: "IBM Plex Mono", Consolas, "Courier New", monospace;
+      font-size: 13px;
+      touch-action: manipulation;
+    }
+    button, input { font: inherit; color: inherit; cursor: pointer; }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+    button:active { filter: brightness(0.88); }
+    button:disabled { opacity: 0.42; cursor: not-allowed; filter: none; }
+    .skip {
+      position: absolute; left: 10px; top: 10px; z-index: 30;
+      background: var(--paper); color: var(--ink); padding: 8px 12px;
+      transform: translateY(-160%);
+    }
+    .skip:focus { transform: none; }
+
+    .room { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; overflow: hidden; }
+    .mast {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 12px;
+      background: linear-gradient(#2a2118, var(--oak));
+      color: var(--paper);
+      border-bottom: 2px solid var(--brass);
+      min-height: 0;
+    }
+    .mark { display: flex; flex-direction: column; line-height: 0.82; }
+    .mark h1 { margin: 0; font-family: Teko, "Arial Narrow", Impact, sans-serif; font-size: 32px; font-weight: 600; letter-spacing: 0.1em; }
+    .mark span { color: var(--brass); font-size: 9px; letter-spacing: 0.22em; }
+    .clock { text-align: center; font-family: Teko, sans-serif; font-size: 42px; letter-spacing: 0.04em; line-height: 0.82; font-variant-numeric: tabular-nums; }
+    .clock small { display: block; font-family: "IBM Plex Mono", monospace; font-size: 9px; letter-spacing: 0.28em; color: var(--brass); }
+    .mast-right { justify-self: end; text-align: right; color: var(--paper-2); font-size: 11px; }
+    .stamp { display: inline-block; margin-top: 2px; padding: 1px 8px; border: 2px solid currentColor; font-family: Teko, sans-serif; font-size: 20px; letter-spacing: 0.14em; }
+    .stamp.go { color: #9ee4a8; } .stamp.abort { color: #ff8a78; } .stamp.hold { color: var(--caution); } .stamp.count { color: #f3d27a; }
+    .mute-mark { display: none; margin-top: 4px; color: var(--caution); font-size: 10px; letter-spacing: 0.2em; }
+    .mute-mark.on { display: block; }
+
+    .body { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.78fr); min-height: 0; }
+    .window { position: relative; min-height: 0; background: #0b1018; overflow: hidden; }
+    canvas { width: 100%; height: 100%; display: block; }
+    .window-chrome {
+      position: absolute; inset: 10px 14px auto 14px; display: flex; justify-content: space-between;
+      color: #efe4c8; font-size: 10px; letter-spacing: 0.18em; text-shadow: 0 1px 0 #000; pointer-events: none;
+    }
+    .radio-tape {
+      position: absolute; left: 14px; right: 14px; top: 28px;
+      color: #e4d2a4; font-size: 11px; letter-spacing: 0.16em; text-shadow: 0 1px 2px #000;
+      pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .callout {
+      position: absolute; left: 18px; bottom: 28px; font-family: Teko, sans-serif;
+      font-size: clamp(42px, 8vw, 92px); letter-spacing: 0.1em; line-height: 0.85;
+      color: #f4ead0; text-shadow: 0 3px 0 #111, 0 0 28px rgba(196,161,90,0.35);
+      opacity: 0; transform: translateY(8px) scale(1.04); pointer-events: none;
+      transition: opacity 0.15s linear, transform 1.6s ease-out;
+    }
+    .callout.show { opacity: 1; transform: none; }
+    .pane {
+      position: absolute; inset: 0; pointer-events: none;
+      box-shadow: inset 0 0 80px rgba(0,0,0,0.35), inset 0 0 0 3px #1c1610;
+    }
+
+    .desk {
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(139,31,20,0.05) 24px),
+        repeating-linear-gradient(90deg, transparent, transparent 23px, rgba(139,31,20,0.05) 24px);
+      display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; overflow: hidden; /* tabs, actions, scroll */
+    }
+    .fidelity { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 2px solid var(--ink); }
+    .fidelity button { background: transparent; border: 0; border-right: 1px solid var(--rule); padding: 9px 4px 7px; font-family: Teko, sans-serif; font-size: 20px; letter-spacing: 0.12em; }
+    .fidelity button[aria-selected="true"], .fidelity button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+    .fidelity .sub { display: block; font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.12em; color: #3d362c; }
+    .fidelity button[aria-selected="true"] .sub, .fidelity button[aria-pressed="true"] .sub { color: var(--brass); }
+    .brief { padding: 6px 12px; border-bottom: 1px solid var(--rule); color: #3d362c; line-height: 1.4; }
+    .pinned { padding: 8px 12px; border-bottom: 1px solid var(--rule); }
+    .desk-scroll { padding: 8px 12px 16px; overflow: auto; min-height: 0; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .pinned .row { margin-bottom: 6px; }
+    .pinned .row:last-child { margin-bottom: 0; }
+    .btn { background: var(--oak); color: var(--paper); border: 0; padding: 8px 12px; font-family: Teko, sans-serif; font-size: 18px; letter-spacing: 0.12em; min-height: 40px; }
+    .btn:hover { filter: brightness(1.12); }
+    .btn.go { background: var(--go); } .btn.abort { background: var(--abort); }
+    .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+    .btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+    .keys { color: #3d362c; font-size: 11px; margin: 0 0 8px; line-height: 1.4; }
+    .telem { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+    .readout { border: 1px solid var(--ink); padding: 6px 8px 4px; background: rgba(255,255,255,0.35); }
+    .readout label { display: block; font-size: 10px; letter-spacing: 0.14em; color: #3d362c; }
+    .readout b { font-family: Teko, sans-serif; font-size: 24px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
+    fieldset { border: 1px solid var(--ink); margin: 0 0 10px; padding: 8px 10px; background: rgba(255,255,255,0.22); }
+    legend { font-family: Teko, sans-serif; font-size: 17px; letter-spacing: 0.12em; padding: 0 6px; }
+    .ctrl { margin: 8px 0; }
+    .ctrl-top { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: 0.08em; margin-bottom: 3px; }
+    input[type="range"] { width: 100%; accent-color: var(--abort); height: 22px; }
+    .plot-wrap { height: 72px; margin: 0 0 8px; border: 1px solid var(--ink); background: #1a140c; }
+    #plot { width: 100%; height: 100%; }
+    .log { height: 78px; overflow: auto; background: var(--oak); color: #e8d7b0; padding: 8px; font-size: 11px; line-height: 1.4; }
+    .missions { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; }
+    .chip { border: 1px dashed var(--ink-dim); padding: 3px 8px; font-size: 10px; letter-spacing: 0.12em; color: var(--ink-dim); }
+    .chip.on { border-style: solid; border-color: var(--go); color: var(--go); background: rgba(44,107,67,0.12); }
+
+    .mosaic { display: grid; grid-template-columns: repeat(8, 1fr); background: #14100c; border-top: 3px solid var(--brass); flex-shrink: 0; }
+    .lamp { padding: 6px 2px; text-align: center; color: #c4b8a4; border-right: 1px solid #000; min-height: 40px; }
+    .lamp b { display: block; font-family: Teko, sans-serif; font-size: 17px; letter-spacing: 0.1em; }
+    .lamp span { font-size: 9px; letter-spacing: 0.12em; }
+    .lamp.on { color: #0d1a10; background: #3d9a5c; }
+    .lamp.warn { color: #1a1404; background: var(--caution); }
+    .lamp.bad { color: #fff; background: var(--abort); }
+
+    @media (max-width: 980px) {
+      .body { grid-template-columns: 1fr; grid-template-rows: minmax(0, 40vh) minmax(0, 1fr); }
+      .mark span, .clock small, #wx { display: none; }
+      .clock { font-size: 28px; }
+      .mark h1 { font-size: 22px; }
+      .mast { padding: 3px 8px; gap: 8px; }
+      .stamp { font-size: 16px; margin: 0; }
+      .brief, .keys { display: none; }
+      .fidelity .sub { display: none; }
+      .fidelity button { font-size: 16px; padding: 8px 4px; }
+      .mosaic { grid-template-columns: repeat(8, 1fr); }
+      .lamp { min-height: 32px; padding: 3px 1px; }
+      .lamp b { font-size: 12px; }
+      .lamp span { font-size: 8px; }
+      .callout { font-size: 36px; bottom: 12px; }
+      .btn { min-height: 38px; font-size: 16px; padding: 6px 10px; }
+    }
+    @media (max-height: 700px) {
+      .body { grid-template-rows: minmax(0, 38vh) minmax(0, 1fr); }
+      .clock { font-size: 26px; }
+      .plot-wrap { height: 48px; }
+      .log { height: 48px; }
+    }
+    @media (max-width: 980px) and (max-height: 700px) {
+      .body { grid-template-rows: minmax(0, 36vh) minmax(0, 1fr); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .callout { transition: opacity 0.2s; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#desk">Skip to controls</a>
+  <div class="room">
+    <header class="mast">
+      <div class="mark">
+        <span>EASTERN RANGE / COMPLEX 7</span>
+        <h1>PAD-7</h1>
+      </div>
+      <div class="clock" id="clock" aria-live="polite">HOLD<small>RANGE CLOCK</small></div>
+      <div class="mast-right">
+        <div>VEHICLE <b id="vehName">KESTREL I</b></div>
+        <div id="wx">CEILING UNLIMITED · WIND 7 KTS E</div>
+        <div id="statusStamp" class="stamp hold">HOLD</div>
+        <div id="muteMark" class="mute-mark">AUDIO OFF</div>
+      </div>
+    </header>
+    <main class="body">
+      <section class="window" aria-label="Range optical">
+        <canvas id="sky" role="img" aria-label="Dawn at Complex 7. Kestrel I on the pad."></canvas>
+        <div class="pane" aria-hidden="true"></div>
+        <div class="window-chrome" aria-hidden="true">
+          <div id="camLabel">OPTICAL / AUTO</div>
+          <div id="objLabel">OBJ: LOW EARTH ORBIT</div>
+        </div>
+        <div class="radio-tape" id="radio" aria-live="polite">RANGE. FIRING ROOM MANNED. VEHICLE IS ON THE PAD.</div>
+        <div class="callout" id="callout"></div>
+      </section>
+      <aside class="desk" id="desk">
+        <div class="fidelity" role="tablist" aria-label="Desk">
+          <button type="button" role="tab" data-fid="RANGE" aria-selected="true">RANGE<span class="sub">fly it</span></button>
+          <button type="button" role="tab" data-fid="PILOT" aria-selected="false">PILOT<span class="sub">hands on</span></button>
+          <button type="button" role="tab" data-fid="PROP" aria-selected="false">PROP<span class="sub">engines</span></button>
+          <button type="button" role="tab" data-fid="STACK" aria-selected="false">STACK<span class="sub">design</span></button>
+        </div>
+        <div class="pinned">
+          <p class="brief" id="brief"></p>
+          <div class="row">
+            <button class="btn go" id="ignite" type="button">ARM COUNTDOWN</button>
+            <button class="btn abort" id="abort" type="button" disabled>ABORT</button>
+            <button class="btn ghost" id="reset" type="button">RESET</button>
+            <button class="btn ghost" id="stageBtn" type="button" hidden>STAGE</button>
+          </div>
+          <div class="row" id="flightBar">
+            <button class="btn go" id="warpBtn" type="button" hidden aria-label="Speed up the range clock">CLOCK 1×</button>
+            <button class="btn ghost" id="camBtn" type="button" aria-label="Change optical view">VIEW AUTO</button>
+            <button class="btn ghost" id="guidBtn" type="button" aria-pressed="true">GUIDANCE ON</button>
+          </div>
+          <p class="keys" id="keys"></p>
+        </div>
+        <div class="desk-scroll">
+          <div class="missions" id="missions"></div>
+          <div class="telem" id="telem"></div>
+          <div class="plot-wrap"><canvas id="plot" aria-label="Altitude versus downrange plot"></canvas></div>
+          <div id="controls"></div>
+          <fieldset>
+            <legend>PRESETS</legend>
+            <div class="row">
+              <button class="btn ghost" data-preset="kestrel" type="button">KESTREL I</button>
+              <button class="btn ghost" data-preset="sparrow" type="button">SPARROW</button>
+              <button class="btn ghost" data-preset="heavy" type="button">HEAVY</button>
+            </div>
+          </fieldset>
+          <div class="log" id="log" aria-live="polite"></div>
+        </div>
+      </aside>
+    </main>
+    <footer class="mosaic" id="mosaic"></footer>
+  </div>
+  <script src="physics.js"></script>
+  <script src="three.min.js"></script>
+  <script src="optical.js"></script>
+  <script src="audio.js"></script>
+  <script>
+    const P = window.Pad7Physics;
+    if (!P) {
+      document.body.textContent = "RANGE. physics.js is missing from this folder.";
+      throw new Error("Pad7Physics missing");
+    }
+    const Sound = (window.Pad7Audio && window.Pad7Audio.create)
+      ? window.Pad7Audio.create()
+      : {
+          unlock: function () { return false; },
+          ready: function () { return false; },
+          isMuted: function () { return true; },
+          setMuted: function () {},
+          setEngine: function () {},
+          beep: function () {},
+          bang: function () {},
+          tick: function () {},
+          cutoff: function () {},
+          chime: function () {},
+        };
+    const sky = document.getElementById("sky");
+    const opticalOn = window.Pad7Optical && window.Pad7Optical.init(sky);
+    const ctx = opticalOn ? null : sky.getContext("2d");
+    const plot = document.getElementById("plot");
+    const pctx = plot.getContext("2d");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const BRIEFS = {
+      RANGE: "Blockhouse. Arm the countdown, ride the pitch program, warp the clock. Staging and circularization are automatic.",
+      PILOT: "You own attitude and staging. A/D pitch, W/S throttle, X stage. Guidance can still fly the gravity turn.",
+      PROP: "Propulsion bench. Specific impulse, thrust, masses, and drag change how the same flying feels.",
+      STACK: "Vehicle designer. Add stages, change payload, even resize the planet. Reset applies a new stack.",
+    };
+    const LAMPS = [
+      { id: "prop", name: "PROP" }, { id: "guid", name: "GUID" }, { id: "range", name: "RANGE" },
+      { id: "track", name: "TRACK" }, { id: "maxq", name: "MAX-Q" }, { id: "fuel", name: "FUEL" },
+      { id: "orbit", name: "ORBIT" }, { id: "go", name: "GO" },
+    ];
+
+    const ui = {
+      fidelity: "RANGE", guidance: true, timeWarp: 1, camera: "auto", muted: false,
+      history: [], plot: [], stars: null, particles: [],
+      phase: "hold", countT: 10, lastCount: 11,
+      callout: "", calloutUntil: 0, radio: "RANGE. FIRING ROOM MANNED. VEHICLE IS ON THE PAD.",
+      cam: { cx: 0, cy: 0, scale: 1, shake: 0 },
+      missions: { karman: false, orbit: false, escape: false, sounding: false },
+      lastFlight: "pad", lastStage: 0, lastMach: 0, lastRadial: 0, saidMaxQ: false,
+    };
+
+    let vehicle = P.defaultVehicle();
+    let state = P.createState(vehicle);
+    let running = false;
+    let lastTs = 0;
+
+    function log(line) {
+      const el = document.getElementById("log");
+      el.textContent = formatClock(displayTime()) + "  " + line + "\n" + el.textContent.split("\n").slice(0, 36).join("\n");
+    }
+    function radio(line) {
+      ui.radio = line;
+      document.getElementById("radio").textContent = line;
+      log(line.toLowerCase());
+    }
+    function slam(text, seconds) {
+      ui.callout = text;
+      ui.calloutUntil = performance.now() + seconds * 1000;
+      const el = document.getElementById("callout");
+      el.textContent = text;
+      el.classList.add("show");
+    }
+    function displayTime() {
+      if (ui.phase === "hold") return 0;
+      if (ui.phase === "count") return -ui.countT;
+      return state.t;
+    }
+    function formatClock(t) {
+      if (ui.phase === "hold") return "HOLD";
+      const sign = t < 0 ? "T-" : "T+";
+      const s = Math.abs(t);
+      const m = Math.floor(s / 60);
+      const sec = s - m * 60;
+      return sign + String(m).padStart(2, "0") + ":" + sec.toFixed(1).padStart(4, "0");
+    }
+    function formatAlt(m) {
+      if (!isFinite(m)) return "—";
+      if (Math.abs(m) >= 1000) return (m / 1000).toFixed(1) + " km";
+      return Math.round(m) + " m";
+    }
+    function formatOrbitAlt(m) {
+      if (!isFinite(m)) return "—";
+      const alt = P.altitude(state);
+      if (m < 0 && alt < 30000) return "—";
+      if (alt < 3000 && Math.abs(m) < 8000) return "—";
+      return formatAlt(m);
+    }
+    function phaseHint() {
+      const desk = {
+        RANGE: "Guidance flies the gravity turn and circularizes.",
+        PILOT: "You pitch, throttle, and stage.",
+        PROP: "Engine and drag numbers are live.",
+        STACK: "Change the vehicle or planet, then reset to apply the stack.",
+      };
+      if (ui.phase === "hold") return "Arm the countdown. " + desk[ui.fidelity];
+      if (ui.phase === "count") return "Counting. Hold Count stops the clock. Commit skips to ignition.";
+      if (state.crashed) return "Impact. Reset to roll out another stack.";
+      if (ui.missions.orbit) return "Orbit. Watch the map, or reset for another attempt.";
+      if (ui.missions.sounding) return "Apogee. Sparrow has the data. Splashdown is the recovery.";
+      if (ui.fidelity === "RANGE") return "Warp the clock — a real ascent takes about 10 minutes.";
+      return desk[ui.fidelity];
+    }
+    function keyHint() {
+      if (ui.phase === "hold") return "I arm countdown   R reset   1–4 desk   M mute";
+      if (ui.phase === "count") return "I commit   / hold count   R reset";
+      if (ui.fidelity === "RANGE") return ". faster clock   , slower   C view   / abort   R reset";
+      return "W/S throttle   A/D pitch   X stage   . clock   / abort   R reset";
+    }
+    const VIEW_NAME = {
+      auto: "AUTO", pad: "PAD", tower: "TOWER", downrange: "SITE",
+      chase: "CHASE", limb: "LIMB", map: "MAP", track: "SITE",
+    };
+    function syncPrimary() {
+      const go = document.getElementById("ignite");
+      const abortBtn = document.getElementById("abort");
+      const warp = document.getElementById("warpBtn");
+      if (ui.phase === "hold") {
+        go.hidden = false; go.disabled = false; go.textContent = "ARM COUNTDOWN";
+        abortBtn.disabled = true; abortBtn.textContent = "ABORT";
+        warp.hidden = true;
+      } else if (ui.phase === "count") {
+        go.hidden = false; go.disabled = false; go.textContent = "COMMIT";
+        abortBtn.disabled = false; abortBtn.textContent = "HOLD COUNT";
+        warp.hidden = true;
+      } else {
+        go.hidden = true;
+        warp.hidden = false;
+        warp.textContent = "CLOCK " + ui.timeWarp + "×";
+        abortBtn.disabled = state.crashed; abortBtn.textContent = "ABORT";
+      }
+      document.getElementById("brief").textContent = phaseHint();
+      document.getElementById("keys").textContent = keyHint();
+    }
+    function syncFlightBar() {
+      document.getElementById("warpBtn").textContent = "CLOCK " + ui.timeWarp + "×";
+      document.getElementById("camBtn").textContent = "VIEW " + (VIEW_NAME[ui.camera] || ui.camera.toUpperCase());
+      const g = document.getElementById("guidBtn");
+      g.textContent = ui.guidance ? "GUIDANCE ON" : "GUIDANCE OFF";
+      g.setAttribute("aria-pressed", String(ui.guidance));
+    }
+
+    function reset(kind) {
+      state = P.createState(vehicle, {
+        planetRadius: state.planetRadius, mu: state.mu, atmScale: state.atmScale,
+        atmRho0: state.atmRho0, atmCutoff: state.atmCutoff,
+      });
+      running = false;
+      ui.history = []; ui.plot = []; ui.particles = [];
+      ui.phase = "hold"; ui.countT = 10; ui.lastCount = 11;
+      ui.missions = { karman: false, orbit: false, escape: false, sounding: false };
+      ui.cam.shake = 0; lastTs = 0;
+      ui.lastFlight = "pad"; ui.lastStage = 0; ui.lastMach = 0; ui.lastRadial = 0; ui.saidMaxQ = false;
+      radio("HOLD. " + (kind || "stack recycled to the pad."));
+      Sound.setEngine(0, 0);
+      if (window.Pad7Optical) window.Pad7Optical.reset();
+      syncPrimary();
+      syncFlightBar();
+      renderChrome();
+    }
+
+    function setFidelity(fid) {
+      ui.fidelity = fid;
+      document.querySelectorAll(".fidelity button").forEach(function (btn) {
+        btn.setAttribute("aria-selected", String(btn.dataset.fid === fid));
+      });
+      document.getElementById("stageBtn").hidden = fid === "RANGE";
+      syncPrimary();
+      drawControls();
+    }
+
+    function slider(key, label, value, min, max, step, shown) {
+      const id = "ctrl-" + key;
+      return '<div class="ctrl"><div class="ctrl-top"><label for="' + id + '">' + label + '</label><span data-shown>' + shown + '</span></div><input id="' + id + '" type="range" min="' + min + '" max="' + max + '" step="' + step + '" value="' + value + '" data-key="' + key + '" /></div>';
+    }
+
+    function drawControls() {
+      const box = document.getElementById("controls");
+      const vis = new Set(P.visibleControls(ui.fidelity).map(function (c) { return c.key; }));
+      const stg = vehicle.stages[Math.min(state.stage, vehicle.stages.length - 1)];
+      let html = '<fieldset><legend>THROTTLE</legend>';
+      html += slider("throttle", "Throttle", state.throttle, 0, 1, 0.01, Math.round(state.throttle * 100) + "%");
+      if (vis.has("pitch")) html += '<p class="keys">Pitch ' + (state.theta * 180 / Math.PI).toFixed(0) + "° — A/D or arrows</p>";
+      html += "</fieldset>";
+      if (vis.has("isp")) {
+        html += '<fieldset><legend>CURRENT STAGE — ' + stg.name.toUpperCase() + "</legend>";
+        html += slider("isp", "Specific impulse", stg.ispSec, 180, 460, 1, stg.ispSec.toFixed(0) + " s");
+        html += slider("thrust", "Thrust", stg.thrustN / 1000, 5, 9000, 1, (stg.thrustN / 1000).toFixed(0) + " kN");
+        html += slider("wetMass", "Wet mass", stg.wetKg, stg.dryKg + 50, 500000, 10, Math.round(stg.wetKg) + " kg");
+        html += slider("dryMass", "Dry mass", stg.dryKg, 40, stg.wetKg - 20, 10, Math.round(stg.dryKg) + " kg");
+        html += slider("cd", "Drag Cd", stg.cd, 0.05, 1.2, 0.01, stg.cd.toFixed(2));
+        html += "</fieldset>";
+      }
+      if (vis.has("payload")) {
+        html += '<fieldset><legend>STACK / PLANET</legend>';
+        html += slider("payload", "Payload", vehicle.payloadKg, 0, 20000, 10, Math.round(vehicle.payloadKg) + " kg");
+        html += slider("planetRadius", "Planet radius", state.planetRadius / P.EARTH_RADIUS, 0.3, 2.4, 0.01, (state.planetRadius / 1000).toFixed(0) + " km");
+        html += slider("mu", "Gravity μ scale", state.mu / P.MU, 0.3, 2.4, 0.01, (state.mu / P.MU).toFixed(2) + " × Earth");
+        html += slider("atmScale", "Atm scale height", state.atmScale, 2000, 20000, 50, Math.round(state.atmScale) + " m");
+        vehicle.stages.forEach(function (s, i) {
+          html += '<p class="keys">STAGE ' + (i + 1) + " " + s.name + " · " + (s.thrustN / 1000).toFixed(0) + " kN · Isp " + s.ispSec + " · Δv " + (P.stageDeltaV(s) / 1000).toFixed(2) + " km/s</p>";
+        });
+        html += '<div class="row"><button class="btn ghost" id="addStage" type="button">ADD STAGE</button><button class="btn ghost" id="dropStage" type="button">DROP UPPER</button></div>';
+        html += '<p class="keys">Stack Δv ' + (P.stackDeltaV(vehicle) / 1000).toFixed(2) + " km/s ideal</p></fieldset>";
+      }
+      box.innerHTML = html;
+      box.querySelectorAll("input[type=range]").forEach(function (el) { el.addEventListener("input", onSlider); });
+      const add = document.getElementById("addStage");
+      if (add) add.addEventListener("click", function () {
+        vehicle.stages.push({ name: "Stage " + (vehicle.stages.length + 1), thrustN: 20000, ispSec: 320, wetKg: 1800, dryKg: 220, cd: 0.35, areaM2: 0.8 });
+        reset("upper stage stacked.");
+        drawControls();
+      });
+      const drop = document.getElementById("dropStage");
+      if (drop) drop.addEventListener("click", function () {
+        if (vehicle.stages.length < 2) return;
+        vehicle.stages.pop();
+        reset("upper stage removed.");
+        drawControls();
+      });
+    }
+
+    function onSlider(ev) {
+      const key = ev.target.dataset.key;
+      const val = Number(ev.target.value);
+      const stg = vehicle.stages[Math.min(state.stage, vehicle.stages.length - 1)];
+      const flying = ui.phase === "flight" && !state.crashed;
+      if (key === "throttle") state.throttle = val;
+      if (key === "isp") stg.ispSec = val;
+      if (key === "thrust") stg.thrustN = val * 1000;
+      if (key === "cd") stg.cd = val;
+      if (key === "wetMass") { stg.wetKg = val; if (!flying) state.fuelKg[state.stage] = stg.wetKg - stg.dryKg; }
+      if (key === "dryMass") { stg.dryKg = val; if (!flying) state.fuelKg[state.stage] = Math.max(0, stg.wetKg - stg.dryKg); }
+      if (key === "payload") { vehicle.payloadKg = val; if (!flying) reset("payload changed."); }
+      if (key === "planetRadius") { state.planetRadius = val * P.EARTH_RADIUS; if (!flying) reset("planet resized."); }
+      if (key === "mu") { state.mu = val * P.MU; if (!flying) reset("gravity changed."); }
+      if (key === "atmScale") state.atmScale = val;
+      const shown = ev.target.closest(".ctrl") && ev.target.closest(".ctrl").querySelector("[data-shown]");
+      if (shown) {
+        if (key === "throttle") shown.textContent = Math.round(val * 100) + "%";
+        if (key === "isp") shown.textContent = val.toFixed(0) + " s";
+        if (key === "thrust") shown.textContent = val.toFixed(0) + " kN";
+        if (key === "wetMass" || key === "dryMass" || key === "payload") shown.textContent = Math.round(val) + " kg";
+        if (key === "cd") shown.textContent = val.toFixed(2);
+        if (key === "planetRadius") shown.textContent = (val * P.EARTH_RADIUS / 1000).toFixed(0) + " km";
+        if (key === "mu") shown.textContent = val.toFixed(2) + " × Earth";
+        if (key === "atmScale") shown.textContent = Math.round(val) + " m";
+      }
+    }
+
+    function cycleWarp() {
+      const steps = [1, 2, 5, 10, 25];
+      ui.timeWarp = steps[(steps.indexOf(ui.timeWarp) + 1) % steps.length];
+      log("range clock " + ui.timeWarp + "×");
+      syncFlightBar();
+      if (ui.phase === "flight") syncPrimary();
+    }
+    function cycleCam() {
+      const steps = ["auto", "pad", "tower", "downrange", "chase", "limb", "map"];
+      const i = steps.indexOf(ui.camera === "track" ? "downrange" : ui.camera);
+      ui.camera = steps[(i < 0 ? 0 : i + 1) % steps.length];
+      document.getElementById("camLabel").textContent = "OPTICAL / " + (VIEW_NAME[ui.camera] || ui.camera.toUpperCase());
+      syncFlightBar();
+    }
+
+    function syncMute() {
+      ui.muted = Sound.isMuted();
+      const mark = document.getElementById("muteMark");
+      if (mark) mark.classList.toggle("on", ui.muted);
+    }
+
+    function armOrCommit() {
+      if (ui.phase === "flight") { cycleWarp(); return; }
+      Sound.unlock();
+      if (ui.phase === "hold") {
+        ui.phase = "count";
+        ui.countT = 10;
+        ui.lastCount = 11;
+        radio("COUNTDOWN STARTED. T MINUS TEN.");
+        slam("T-10", 1.2);
+        Sound.beep(880, 0.08, 0.06);
+        syncPrimary();
+        return;
+      }
+      if (ui.phase === "count") {
+        ui.countT = 0;
+      }
+    }
+    function startFlight() {
+      Sound.unlock();
+      ui.phase = "flight";
+      state.ignited = true;
+      state.throttle = Math.max(state.throttle, ui.fidelity === "RANGE" ? 1 : 0.7);
+      running = true;
+      ui.cam.shake = 1;
+      radio("IGNITION. VEHICLE IS COMMITTED.");
+      slam("LIFTOFF.", 2.4);
+      Sound.beep(220, 0.3, 0.08);
+      Sound.bang();
+      syncPrimary();
+    }
+    function abort() {
+      if (ui.phase === "hold") return;
+      if (ui.phase === "count") {
+        ui.phase = "hold";
+        ui.countT = 10;
+        radio("COUNTDOWN HOLD. CLOCK STOPPED.");
+        slam("HOLD", 1.4);
+        syncPrimary();
+        return;
+      }
+      state.throttle = 0;
+      ui.guidance = false;
+      running = true;
+      radio("ABORT. ENGINES CUT.");
+      slam("ABORT", 1.8);
+      Sound.setEngine(0, 0);
+      syncPrimary();
+      syncFlightBar();
+    }
+
+    const keysDown = {};
+    window.addEventListener("keydown", function (e) {
+      keysDown[e.key.toLowerCase()] = true;
+      if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(e.key.toLowerCase())) e.preventDefault();
+      if (e.key === "i" || e.key === "I" || e.key === " ") armOrCommit();
+      if (e.key === "/") abort();
+      if (e.key === "r" || e.key === "R") reset("hold. recycled to pad.");
+      if (e.key === "x" || e.key === "X") { if (P.stage(state)) radio("STAGING. " + P.activeStage(state).name.toUpperCase() + " IS LIVE."); }
+      if (e.key === "g" || e.key === "G") { ui.guidance = !ui.guidance; syncFlightBar(); }
+      if (e.key === ".") cycleWarp();
+      if (e.key === ",") {
+        const steps = [1, 2, 5, 10, 25];
+        ui.timeWarp = steps[(steps.indexOf(ui.timeWarp) + steps.length - 1) % steps.length];
+        syncFlightBar();
+      }
+      if (e.key === "c" || e.key === "C") cycleCam();
+      if (e.key === "m" || e.key === "M") { Sound.setMuted(!Sound.isMuted()); syncMute(); }
+      if (e.key >= "1" && e.key <= "4") setFidelity(["RANGE", "PILOT", "PROP", "STACK"][Number(e.key) - 1]);
+    });
+    window.addEventListener("keyup", function (e) { keysDown[e.key.toLowerCase()] = false; });
+
+    document.getElementById("ignite").addEventListener("click", armOrCommit);
+    document.getElementById("abort").addEventListener("click", abort);
+    document.getElementById("reset").addEventListener("click", function () { reset("hold. recycled to pad."); });
+    document.getElementById("warpBtn").addEventListener("click", cycleWarp);
+    document.getElementById("camBtn").addEventListener("click", cycleCam);
+    document.getElementById("guidBtn").addEventListener("click", function () { ui.guidance = !ui.guidance; syncFlightBar(); });
+    document.getElementById("stageBtn").addEventListener("click", function () {
+      if (P.stage(state)) radio("STAGING. " + P.activeStage(state).name.toUpperCase() + " IS LIVE.");
+    });
+    document.querySelectorAll(".fidelity button").forEach(function (btn) {
+      btn.addEventListener("click", function () { setFidelity(btn.dataset.fid); });
+    });
+    document.querySelectorAll("[data-preset]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (btn.dataset.preset === "kestrel") vehicle = P.defaultVehicle();
+        if (btn.dataset.preset === "sparrow") vehicle = P.soundingVehicle();
+        if (btn.dataset.preset === "heavy") vehicle = P.heavyVehicle();
+        document.getElementById("vehName").textContent = vehicle.name.toUpperCase();
+        reset("new vehicle rolled out: " + vehicle.name + ".");
+        drawControls();
+      });
+    });
+
+    function manualInput() {
+      let throttle = state.throttle;
+      if (keysDown.w || keysDown.arrowup) throttle = Math.min(1, throttle + 0.02);
+      if (keysDown.s || keysDown.arrowdown) throttle = Math.max(0, throttle - 0.02);
+      let pitchRate = 0;
+      if (keysDown.a || keysDown.arrowleft) pitchRate = 0.6;
+      if (keysDown.d || keysDown.arrowright) pitchRate = -0.6;
+      return { ignite: state.ignited, throttle: throttle, guidance: ui.guidance, pitchRate: pitchRate };
+    }
+
+    function stepFlight(dt) {
+      if (ui.phase !== "flight") return;
+      const input = ui.fidelity === "RANGE" && ui.guidance ? P.rangeAutopilot(state) : manualInput();
+      const before = P.classifyFlight(state);
+      const stageBefore = state.stage;
+      P.step(state, dt, input);
+      if (state.stage !== stageBefore) {
+        radio("STAGING CONFIRMED. " + P.activeStage(state).name.toUpperCase() + ".");
+        slam("STAGE.", 1.6);
+        Sound.beep(140, 0.2, 0.07);
+        Sound.bang();
+        spawnBurst();
+      }
+      if (!ui.saidMaxQ && state.events.some(function (e) { return e.kind === "maxq"; })) {
+        ui.saidMaxQ = true;
+        radio("MAX Q. VEHICLE IS THROUGH THE BUFFET.");
+        slam("MAX Q.", 1.8);
+      }
+      const after = P.classifyFlight(state);
+      if (after !== before) {
+        if (after === "orbit") {
+          radio("WE HAVE ORBIT. PERIAPSIS IS ABOVE THE ATMOSPHERE.");
+          slam("ORBIT.", 3.2);
+          Sound.chime([{ f: 392, t: 0, d: 0.18 }, { f: 523, t: 0.14, d: 0.22 }, { f: 659, t: 0.3, d: 0.4, g: 0.07 }]);
+        }
+        if (after === "crashed") {
+          if (ui.missions.sounding) {
+            radio("SPLASHDOWN. SPARROW PACKAGE IS IN THE WATER.");
+            slam("SPLASHDOWN", 2.6);
+            Sound.chime([{ f: 330, t: 0, d: 0.2 }, { f: 247, t: 0.16, d: 0.35 }]);
+          } else {
+            radio("IMPACT. RANGE SAFETY.");
+            slam("IMPACT", 2.2);
+          }
+          Sound.setEngine(0, 0);
+        }
+        if (after === "escape") { radio("HYPERBOLIC. THIS STACK IS LEAVING."); slam("ESCAPE", 2.4); }
+        if (after === "reentry" && (state.x * state.vx + state.y * state.vy) <= 0) radio("REENTRY INTERFACE.");
+      }
+      if (P.altitude(state) > 100000 && !ui.missions.karman) {
+        ui.missions.karman = true;
+        radio("KARMAN. WE ARE IN SPACE.");
+      }
+      const radNow = (state.x * state.vx + state.y * state.vy) / Math.max(P.radius(state), 1);
+      if (
+        vehicle.stages.length === 1 &&
+        ui.missions.karman &&
+        !ui.missions.sounding &&
+        radNow <= 0 &&
+        P.altitude(state) > 100000
+      ) {
+        ui.missions.sounding = true;
+        radio("APOGEE. SPARROW IS THROUGH THE LINE. WE HAVE THE DATA.");
+        slam("APOGEE.", 3.2);
+        Sound.chime([{ f: 440, t: 0, d: 0.16 }, { f: 554, t: 0.12, d: 0.2 }, { f: 659, t: 0.26, d: 0.38, g: 0.07 }]);
+      }
+      ui.lastRadial = radNow;
+      if (after === "orbit") ui.missions.orbit = true;
+      if (after === "escape") ui.missions.escape = true;
+      if (state.mach >= 1 && ui.lastMach < 1) radio("MACH 1.");
+      ui.lastMach = state.mach;
+      if (ui.history.length > 1800) ui.history.shift();
+      ui.history.push({ x: state.x, y: state.y });
+      if (ui.plot.length > 420) ui.plot.shift();
+      ui.plot.push({ t: state.t, alt: Math.max(0, P.altitude(state)), x: state.x });
+      spawnPlume(dt);
+    }
+
+    function spawnPlume(dt) {
+      if (!(state.ignited && state.throttle > 0.05 && state.fuelKg[state.stage] > 0 && !state.crashed)) return;
+      const n = reduceMotion ? 1 : 4;
+      for (let i = 0; i < n; i += 1) {
+        const back = state.theta + Math.PI;
+        ui.particles.push({
+          x: state.x + Math.cos(back) * 8,
+          y: state.y + Math.sin(back) * 8,
+          vx: state.vx + Math.cos(back) * (80 + Math.random() * 90) * state.throttle,
+          vy: state.vy + Math.sin(back) * (80 + Math.random() * 90) * state.throttle,
+          life: 0.35 + Math.random() * 0.5,
+          age: 0,
+          kind: P.altitude(state) < 12000 ? "smoke" : "flame",
+        });
+      }
+      if (ui.particles.length > 500) ui.particles.splice(0, ui.particles.length - 500);
+    }
+    function spawnBurst() {
+      for (let i = 0; i < 18; i += 1) {
+        const a = Math.random() * Math.PI * 2;
+        ui.particles.push({
+          x: state.x, y: state.y,
+          vx: state.vx + Math.cos(a) * 40, vy: state.vy + Math.sin(a) * 40,
+          life: 0.8, age: 0, kind: "spark",
+        });
+      }
+    }
+    function stepParticles(dt) {
+      ui.particles.forEach(function (p) {
+        p.age += dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+      });
+      ui.particles = ui.particles.filter(function (p) { return p.age < p.life; });
+    }
+
+    function renderChrome() {
+      const t = displayTime();
+      document.getElementById("clock").innerHTML = formatClock(t) + "<small>RANGE CLOCK</small>";
+      const flight = P.classifyFlight(state);
+      const stamp = document.getElementById("statusStamp");
+      let label = "HOLD"; let cls = "hold";
+      if (ui.phase === "count") { label = "COUNT"; cls = "count"; }
+      if (ui.phase === "flight") {
+        if (flight === "powered" || flight === "ascent" || flight === "coast") { label = "POWERED"; cls = "go"; }
+        if (flight === "orbit") { label = "ORBIT"; cls = "go"; }
+        if (flight === "escape") { label = "ESCAPE"; cls = "go"; }
+        if (ui.missions.sounding && flight !== "crashed" && flight !== "orbit") { label = "APOGEE"; cls = "go"; }
+        if (flight === "crashed") { label = ui.missions.sounding ? "SPLASHDOWN" : "ABORT"; cls = ui.missions.sounding ? "go" : "abort"; }
+        if (flight === "reentry" && !ui.missions.sounding) { label = "REENTRY"; cls = "abort"; }
+        if (flight === "reentry" && ui.missions.sounding) { label = "REENTRY"; cls = "go"; }
+      }
+      stamp.className = "stamp " + cls;
+      stamp.textContent = label;
+
+      const el = P.orbitalElements(state);
+      const fuel = state.fuelKg[state.stage];
+      const cells = [
+        ["ALTITUDE", formatAlt(P.altitude(state))],
+        ["VELOCITY", Math.round(el.speed) + " m/s"],
+        ["MACH", (state.mach || 0).toFixed(2)],
+        ["APOAPSIS", formatOrbitAlt(el.apoapsisAltitude)],
+        ["PERIAPSIS", formatOrbitAlt(el.periapsisAltitude)],
+        ["FUEL", Math.round(fuel) + " kg"],
+      ];
+      document.getElementById("telem").innerHTML = cells.map(function (c) {
+        return '<div class="readout"><label>' + c[0] + "</label><b>" + c[1] + "</b></div>";
+      }).join("");
+      document.getElementById("missions").innerHTML =
+        '<span class="chip' + (ui.missions.karman ? " on" : "") + '">KARMAN</span>' +
+        '<span class="chip' + (ui.missions.sounding ? " on" : "") + '">SOUNDING</span>' +
+        '<span class="chip' + (ui.missions.orbit ? " on" : "") + '">ORBIT</span>' +
+        '<span class="chip' + (ui.missions.escape ? " on" : "") + '">ESCAPE</span>';
+      const skyEl = document.getElementById("sky");
+      const view = ui.phase === "flight"
+        ? (ui.missions.orbit ? "Vehicle in orbit around Earth." : "Vehicle in flight. Altitude " + formatAlt(P.altitude(state)) + ".")
+        : "Dawn at Complex 7. Kestrel I on the pad.";
+      skyEl.setAttribute("aria-label", view);
+
+      const lamps = {
+        prop: state.ignited && state.throttle > 0.05 && fuel > 1 ? "on" : "",
+        guid: ui.guidance ? "on" : "",
+        range: state.crashed && !ui.missions.sounding ? "bad" : "on",
+        track: P.altitude(state) > 400 ? "on" : "",
+        maxq: state.maxQPassed ? "on" : (state.q > 15000 ? "warn" : ""),
+        fuel: fuel < 40 ? "warn" : "on",
+        orbit: flight === "orbit" ? "on" : "",
+        go: !state.crashed && (P.twr(state) > 1.05 || flight === "orbit" || ui.phase === "count") ? "on" : "warn",
+      };
+      document.getElementById("mosaic").innerHTML = LAMPS.map(function (l) {
+        const k = lamps[l.id] || "";
+        return '<div class="lamp ' + k + '"><b>' + l.name + "</b><span>" + (k === "on" ? "GREEN" : k === "bad" ? "NO-GO" : k === "warn" ? "CAUTION" : "DARK") + "</span></div>";
+      }).join("");
+      document.getElementById("objLabel").textContent = vehicle.stages.length === 1
+        ? (ui.missions.sounding ? "OBJ: SATISFIED — SOUNDING" : "OBJ: SOUNDING — 100 KM")
+        : (ui.missions.orbit ? "OBJ: SATISFIED — LOW EARTH ORBIT" : "OBJ: LOW EARTH ORBIT");
+      const thr = document.querySelector("input[data-key=throttle]");
+      if (thr && document.activeElement !== thr) {
+        thr.value = String(state.throttle);
+        const shown = thr.closest(".ctrl") && thr.closest(".ctrl").querySelector(".ctrl-top span:last-child");
+        if (shown) shown.textContent = Math.round(state.throttle * 100) + "%";
+      }
+      if (performance.now() > ui.calloutUntil) document.getElementById("callout").classList.remove("show");
+    }
+
+    function makeStars(w, h) {
+      const list = [];
+      for (let i = 0; i < 220; i += 1) list.push({ x: Math.random() * w, y: Math.random() * h, s: Math.random() * 1.6, c: Math.random() });
+      return list;
+    }
+    function worldToScreen(x, y, cam) {
+      return { x: cam.ox + (x - cam.cx) * cam.scale + cam.jx, y: cam.oy - (y - cam.cy) * cam.scale + cam.jy };
+    }
+    function cameraTarget(w, h) {
+      const alt = P.altitude(state);
+      const r = P.radius(state);
+      let mode = ui.camera;
+      if (mode === "auto") {
+        if (ui.phase !== "flight" || alt < 70) mode = "pad";
+        else if (alt < 110000) mode = "chase";
+        else mode = "map";
+      }
+      const cam = { cx: 0, cy: 0, scale: 1, ox: w / 2, oy: h * 0.52, mode: mode, jx: 0, jy: 0 };
+      if (mode === "pad" || mode === "tower") {
+        cam.cx = 70 + state.x * 0.2;
+        cam.cy = state.planetRadius + (mode === "tower" ? 90 : 110) + Math.max(0, alt - 15) * 0.4;
+        cam.scale = h / (420 + Math.max(0, alt) * 0.35);
+        cam.oy = h * 0.62;
+      } else if (mode === "chase" || mode === "track" || mode === "downrange" || mode === "limb") {
+        const spd = Math.hypot(state.vx, state.vy);
+        const lead = Math.min(200, spd * 0.22);
+        const ux = spd > 1 ? state.vx / spd : 0;
+        const uy = spd > 1 ? state.vy / spd : 1;
+        cam.cx = state.x + ux * lead;
+        cam.cy = state.y + uy * lead * 0.3;
+        cam.scale = h / Math.max(520, alt * 1.15 + spd * 0.5 + 300);
+        cam.oy = h * 0.58;
+      } else {
+        cam.cx = 0; cam.cy = 0; cam.oy = h / 2;
+        cam.scale = (Math.min(w, h) * 0.4) / Math.max(r, state.planetRadius * 1.35);
+      }
+      return cam;
+    }
+
+    function drawSky(now) {
+      const w = sky.width, h = sky.height;
+      const alt = P.altitude(state);
+      const dawn = Math.max(0, 1 - alt / 90000);
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, dawn > 0.2 ? "#141c2a" : "#05070c");
+      g.addColorStop(0.55, dawn > 0.35 ? "#3a3344" : "#0a1018");
+      g.addColorStop(0.78, dawn > 0.4 ? "#c45a32" : "#152033");
+      g.addColorStop(1, dawn > 0.4 ? "#e39a55" : "#1a2838");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      if (!ui.stars || ui.stars.w !== w) ui.stars = { w: w, list: makeStars(w, h) };
+      ui.stars.list.forEach(function (s) {
+        ctx.globalAlpha = 0.15 + (1 - dawn) * 0.7;
+        ctx.fillStyle = s.c > 0.85 ? "#c9d8ff" : "#efe4c8";
+        ctx.fillRect(s.x, s.y, s.s, s.s);
+      });
+      ctx.globalAlpha = 1;
+
+      const want = cameraTarget(w, h);
+      const err = Math.hypot(want.cx - ui.cam.cx, want.cy - ui.cam.cy);
+      const follow = ui.phase === "flight" && !reduceMotion ? Math.min(1, 0.16 + err / 2200) : 1;
+      ui.cam.cx += (want.cx - ui.cam.cx) * follow;
+      ui.cam.cy += (want.cy - ui.cam.cy) * follow;
+      ui.cam.scale += (want.scale - ui.cam.scale) * Math.min(1, follow + 0.04);
+      ui.cam.shake *= 0.92;
+      const thrusting = state.ignited && state.throttle > 0.05 && state.fuelKg[state.stage] > 0 && !state.crashed;
+      if (thrusting && alt < 4000 && !reduceMotion) ui.cam.shake = Math.max(ui.cam.shake, state.throttle * 0.7);
+      const cam = {
+        cx: ui.cam.cx, cy: ui.cam.cy, scale: ui.cam.scale, ox: want.ox, oy: want.oy, mode: want.mode,
+        jx: reduceMotion ? 0 : (Math.random() - 0.5) * ui.cam.shake * 5,
+        jy: reduceMotion ? 0 : (Math.random() - 0.5) * ui.cam.shake * 5,
+      };
+
+      drawEarth(cam, dawn);
+      if (cam.mode === "pad") {
+        const horizon = worldToScreen(0, state.planetRadius, cam).y;
+        ctx.fillStyle = "#0e2a32";
+        ctx.fillRect(0, horizon, w, h - horizon + 8);
+        ctx.fillStyle = "#2a3828";
+        ctx.fillRect(0, horizon, Math.max(0, worldToScreen(-90, state.planetRadius, cam).x), h - horizon + 8);
+      }
+      drawTrail(cam);
+      drawOrbit(cam);
+      drawParticles(cam);
+      if (cam.mode === "pad") drawPad(cam, now);
+      if (state.debris) state.debris.forEach(function (d) { drawBooster(cam, d, 0.7); });
+      drawRocket(cam);
+      drawPlot();
+    }
+
+    function drawEarth(cam, dawn) {
+      const earthR = state.planetRadius * cam.scale;
+      const e = worldToScreen(0, 0, cam);
+      const halo = ctx.createRadialGradient(e.x, e.y, earthR * 0.98, e.x, e.y, earthR + 56);
+      halo.addColorStop(0, "rgba(90, 160, 210, 0)");
+      halo.addColorStop(0.55, "rgba(110, 180, 220, 0.34)");
+      halo.addColorStop(1, "rgba(110, 180, 220, 0)");
+      ctx.fillStyle = halo;
+      ctx.beginPath(); ctx.arc(e.x, e.y, earthR + 56, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#1a5570";
+      ctx.beginPath(); ctx.arc(e.x, e.y, Math.max(2, earthR), 0, Math.PI * 2); ctx.fill();
+      ctx.save();
+      ctx.beginPath(); ctx.arc(e.x, e.y, Math.max(2, earthR), 0, Math.PI * 2); ctx.clip();
+      function land(pts, fill) {
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        pts.forEach(function (p, i) {
+          const x = e.x + p[0] * earthR;
+          const y = e.y - p[1] * earthR;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.fill();
+      }
+      land([
+        [-0.22, 0.80], [-0.10, 0.88], [0.00, 0.91],
+        [0.055, 0.97], [0.13, 0.94], [0.09, 0.88], [0.06, 0.84],
+        [0.08, 0.72], [0.03, 0.58], [-0.04, 0.50], [-0.16, 0.46],
+        [-0.30, 0.42], [-0.40, 0.50], [-0.46, 0.62], [-0.38, 0.74], [-0.30, 0.82]
+      ], "#3c6b3c");
+      land([
+        [0.05, 0.975], [0.14, 0.95], [0.12, 0.89], [0.07, 0.86], [0.04, 0.90], [0.045, 0.95]
+      ], "#4d7e48");
+      land([
+        [-0.16, 0.36], [-0.06, 0.30], [0.00, 0.16], [-0.04, -0.08], [-0.10, -0.28],
+        [-0.18, -0.22], [-0.24, 0.02], [-0.22, 0.22]
+      ], "#3a6840");
+      land([
+        [0.16, 0.48], [0.30, 0.44], [0.38, 0.28], [0.36, 0.08], [0.28, -0.12],
+        [0.18, -0.20], [0.12, -0.02], [0.12, 0.22], [0.14, 0.40]
+      ], "#3e6e3a");
+      land([[0.22, 0.36], [0.34, 0.32], [0.32, 0.18], [0.22, 0.20]], "#b08a4a");
+      land([
+        [0.10, 0.64], [0.22, 0.66], [0.28, 0.58], [0.20, 0.52], [0.10, 0.56]
+      ], "#456f40");
+      land([
+        [-0.20, 0.96], [-0.08, 0.98], [-0.04, 0.90], [-0.18, 0.90]
+      ], "#dce6ea");
+      land([
+        [-0.40, -0.78], [0.40, -0.78], [0.50, -0.88], [0.18, -0.98], [-0.18, -0.98], [-0.50, -0.88]
+      ], "#e4eef2");
+      ctx.fillStyle = "#d8e4dc";
+      ctx.globalAlpha = 0.17;
+      ctx.beginPath(); ctx.ellipse(e.x + earthR * 0.08, e.y - earthR * 0.42, earthR * 0.52, earthR * 0.09, 0.25, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(e.x - earthR * 0.18, e.y + earthR * 0.12, earthR * 0.38, earthR * 0.07, -0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(e.x + earthR * 0.28, e.y + earthR * 0.32, earthR * 0.32, earthR * 0.06, 0.1, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+      const night = ctx.createLinearGradient(e.x - earthR, e.y, e.x + earthR, e.y);
+      night.addColorStop(0, "rgba(4,8,16,0.72)");
+      night.addColorStop(0.45, "rgba(4,8,16,0.15)");
+      night.addColorStop(1, "rgba(4,8,16,0)");
+      ctx.fillStyle = night;
+      ctx.fillRect(e.x - earthR, e.y - earthR, earthR * 2, earthR * 2);
+      if (dawn < 0.45) {
+        ctx.fillStyle = "#f3e0a8";
+        for (let i = 0; i < 22; i += 1) {
+          ctx.globalAlpha = 0.4;
+          ctx.fillRect(e.x - earthR * 0.48 + (i % 8) * earthR * 0.055, e.y - earthR * 0.12 + Math.floor(i / 8) * earthR * 0.09, 1.3, 1.3);
+        }
+        ctx.globalAlpha = 1;
+      }
+      ctx.restore();
+    }
+
+    function drawTrail(cam) {
+      if (ui.history.length < 2) return;
+      ctx.strokeStyle = "rgba(244, 210, 160, 0.85)";
+      ctx.lineWidth = cam.mode === "map" ? 1.2 : 2;
+      ctx.beginPath();
+      ui.history.forEach(function (p, i) {
+        const s = worldToScreen(p.x, p.y, cam);
+        if (i === 0) ctx.moveTo(s.x, s.y); else ctx.lineTo(s.x, s.y);
+      });
+      ctx.stroke();
+    }
+    function drawOrbit(cam) {
+      if (cam.mode !== "map") return;
+      const pts = P.orbitPoints(state, 96);
+      if (pts.length < 8) return;
+      ctx.strokeStyle = "rgba(196, 161, 90, 0.55)";
+      ctx.setLineDash([4, 6]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      pts.forEach(function (p, i) {
+        const s = worldToScreen(p.x, p.y, cam);
+        if (i === 0) ctx.moveTo(s.x, s.y); else ctx.lineTo(s.x, s.y);
+      });
+      ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
+    }
+    function drawParticles(cam) {
+      ui.particles.forEach(function (p) {
+        const s = worldToScreen(p.x, p.y, cam);
+        const a = 1 - p.age / p.life;
+        ctx.globalAlpha = a * 0.7;
+        ctx.fillStyle = p.kind === "smoke" ? "#c9bfb0" : p.kind === "spark" ? "#ffe08a" : "#ff9a3a";
+        ctx.beginPath(); ctx.arc(s.x, s.y, p.kind === "smoke" ? 3.5 * a + 1 : 2, 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    function drawPad(cam, now) {
+      const base = worldToScreen(0, state.planetRadius, cam);
+      const t = now / 1000;
+      ctx.fillStyle = "#0f2a30";
+      ctx.fillRect(base.x - 40, base.y, 520, 80);
+      ctx.strokeStyle = "rgba(180,210,210,0.18)";
+      ctx.beginPath();
+      for (let i = 0; i < 8; i += 1) {
+        ctx.moveTo(base.x + 80 + i * 40, base.y + 6);
+        ctx.quadraticCurveTo(base.x + 100 + i * 40, base.y + 10 + Math.sin(t * 2 + i) * 3, base.x + 120 + i * 40, base.y + 6);
+      }
+      ctx.stroke();
+      ctx.fillStyle = "#6d6758";
+      ctx.fillRect(base.x - 34, base.y - 8, 70, 10);
+      ctx.fillStyle = "#2a241c";
+      ctx.fillRect(base.x - 10, base.y - 4, 24, 5);
+      const retract = (ui.phase === "count" && ui.countT < 3.5) || ui.phase === "flight";
+      const gx = retract ? 36 : 14;
+      ctx.fillStyle = "#3a3328";
+      ctx.fillRect(base.x + gx, base.y - 92, 7, 92);
+      ctx.fillRect(base.x + gx, base.y - 92, 28, 5);
+      ctx.fillRect(base.x + gx + 2, base.y - 70, 18, 3);
+      ctx.fillRect(base.x + gx + 2, base.y - 48, 18, 3);
+      ctx.fillStyle = "#8a8476";
+      ctx.fillRect(base.x - 70, base.y - 54, 5, 54);
+      ctx.fillRect(base.x + 58, base.y - 62, 5, 62);
+      ctx.fillStyle = "#c4a15a";
+      ctx.fillRect(base.x - 72, base.y - 58, 9, 5);
+      ctx.fillRect(base.x + 56, base.y - 66, 9, 5);
+      if (ui.phase !== "flight" || P.altitude(state) < 80) {
+        ctx.fillStyle = "rgba(255, 220, 150, 0.08)";
+        ctx.beginPath(); ctx.moveTo(base.x - 66, base.y - 54); ctx.lineTo(base.x - 20, base.y); ctx.lineTo(base.x - 90, base.y); ctx.fill();
+      }
+      if ((ui.phase === "count" && ui.countT < 8) || (state.ignited && P.altitude(state) < 40)) {
+        ctx.fillStyle = "rgba(220,220,220,0.12)";
+        for (let i = 0; i < 6; i += 1) {
+          ctx.beginPath();
+          ctx.ellipse(base.x - 6 + i * 5, base.y - 2, 10 + i * 2, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    function drawBooster(cam, body, alpha) {
+      const s = worldToScreen(body.x, body.y, cam);
+      const len = cam.mode === "pad" ? 36 : Math.max(10, 16 * Math.min(2.5, cam.scale / 1.8));
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(-body.theta + Math.PI / 2);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = "#e8dcc4";
+      ctx.fillRect(-3.5, -len * 0.4, 7, len * 0.8);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+
+    function drawRocket(cam) {
+      const s = worldToScreen(state.x, state.y, cam);
+      const len = cam.mode === "pad" ? 52 : cam.mode === "chase"
+        ? Math.max(22, 28 * Math.min(2.2, cam.scale / 1.15))
+        : Math.max(12, 16 * Math.min(2.4, cam.scale / 1.5));
+      const thrusting = state.ignited && state.throttle > 0.05 && state.fuelKg[state.stage] > 0 && !state.crashed;
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(-state.theta + Math.PI / 2);
+      if (thrusting) {
+        const vac = Math.min(1.6, 1 + P.altitude(state) / 80000);
+        const fl = (10 + state.throttle * 18) * vac;
+        ctx.fillStyle = "rgba(255, 150, 50, 0.55)";
+        ctx.beginPath(); ctx.moveTo(-5, len * 0.48); ctx.lineTo(0, len * 0.48 + fl); ctx.lineTo(5, len * 0.48); ctx.fill();
+        ctx.fillStyle = "#fff4c8";
+        ctx.beginPath(); ctx.moveTo(-2.2, len * 0.48); ctx.lineTo(0, len * 0.48 + fl * 0.65); ctx.lineTo(2.2, len * 0.48); ctx.fill();
+        if (P.altitude(state) > 8000) {
+          ctx.fillStyle = "rgba(255,220,160,0.5)";
+          for (let i = 1; i < 4; i += 1) {
+            ctx.beginPath(); ctx.ellipse(0, len * 0.48 + i * 5, 2.2 - i * 0.3, 1.4, 0, 0, Math.PI * 2); ctx.fill();
+          }
+        }
+      }
+      ctx.fillStyle = "#2a2218";
+      ctx.beginPath(); ctx.moveTo(-4, len * 0.48); ctx.lineTo(-2, len * 0.38); ctx.lineTo(2, len * 0.38); ctx.lineTo(4, len * 0.48); ctx.fill();
+      ctx.fillStyle = "#efe6d2";
+      ctx.fillRect(-4.2, -len * 0.22, 8.4, len * 0.62);
+      if (state.stage === 0 && vehicle.stages.length > 1) {
+        ctx.fillStyle = "#1b1712";
+        ctx.fillRect(-4.2, -len * 0.28, 8.4, 6);
+        ctx.fillStyle = "#d7c9ae";
+        ctx.fillRect(-3.6, -len * 0.55, 7.2, len * 0.28);
+      }
+      ctx.fillStyle = "#a31b12";
+      ctx.beginPath(); ctx.moveTo(-3.6, -len * 0.55); ctx.lineTo(0, -len * 0.78); ctx.lineTo(3.6, -len * 0.55); ctx.fill();
+      ctx.fillStyle = "#3a3328";
+      ctx.fillRect(-6.5, len * 0.22, 3, 10);
+      ctx.fillRect(3.5, len * 0.22, 3, 10);
+      ctx.restore();
+    }
+
+    function drawPlot() {
+      const w = plot.width, h = plot.height;
+      pctx.fillStyle = "#1a140c";
+      pctx.fillRect(0, 0, w, h);
+      pctx.strokeStyle = "rgba(196,161,90,0.18)";
+      for (let x = 0; x < w; x += 22) { pctx.beginPath(); pctx.moveTo(x, 0); pctx.lineTo(x, h); pctx.stroke(); }
+      for (let y = 0; y < h; y += 16) { pctx.beginPath(); pctx.moveTo(0, y); pctx.lineTo(w, y); pctx.stroke(); }
+      pctx.fillStyle = "#8a7a55";
+      pctx.font = "10px IBM Plex Mono, monospace";
+      if (ui.plot.length < 2) {
+        pctx.fillText("amber scope — altitude vs downrange", 8, h / 2);
+        return;
+      }
+      const maxA = Math.max(2000, ...ui.plot.map(function (p) { return p.alt; }));
+      const maxX = Math.max(2000, ...ui.plot.map(function (p) { return Math.abs(p.x); }));
+      pctx.strokeStyle = "#e8b84a";
+      pctx.lineWidth = 1.6;
+      pctx.beginPath();
+      ui.plot.forEach(function (p, i) {
+        const x = 6 + (Math.abs(p.x) / maxX) * (w - 12);
+        const y = h - 6 - (p.alt / maxA) * (h - 12);
+        if (i === 0) pctx.moveTo(x, y); else pctx.lineTo(x, y);
+      });
+      pctx.stroke();
+    }
+
+    function resize() {
+      const rect = sky.parentElement.getBoundingClientRect();
+      const w = Math.max(1, Math.floor(rect.width));
+      const h = Math.max(1, Math.floor(rect.height));
+      if (opticalOn && window.Pad7Optical) {
+        window.Pad7Optical.resize(w, h);
+      } else {
+        sky.width = w;
+        sky.height = h;
+      }
+      const pr = plot.parentElement.getBoundingClientRect();
+      plot.width = Math.max(1, Math.floor(pr.width));
+      plot.height = Math.max(1, Math.floor(pr.height));
+    }
+
+    function loop(ts) {
+      if (!lastTs) lastTs = ts;
+      let dt = Math.min(0.05, (ts - lastTs) / 1000);
+      lastTs = ts;
+      if (ui.phase === "count") {
+        const next = ui.countT - dt;
+        const shown = Math.ceil(ui.countT);
+        if (shown < ui.lastCount && shown >= 0) {
+          ui.lastCount = shown;
+          if (shown === 5) radio("T MINUS FIVE. GUIDANCE IS INTERNAL.");
+          else if (shown === 3) radio("T MINUS THREE. TOWER CLEAR.");
+          else if (shown === 1) radio("T MINUS ONE.");
+          else if (shown > 0) radio("T MINUS " + shown + ".");
+          Sound.tick(shown);
+          if (shown === 0) slam("IGNITION", 0.8);
+        }
+        ui.countT = next;
+        if (ui.countT <= 0) startFlight();
+      }
+      const warp = ui.phase === "flight" ? ui.timeWarp : 1;
+      const simDt = dt * warp;
+      const sub = Math.max(1, Math.ceil(simDt / 0.05));
+      for (let i = 0; i < sub; i += 1) stepFlight(simDt / sub);
+      stepParticles(dt);
+      const thrusting = state.ignited && state.throttle > 0.04 && state.fuelKg[state.stage] > 0 && !state.crashed;
+      Sound.setEngine(thrusting ? state.throttle * (ui.phase === "flight" ? 1 : 0) : ui.phase === "count" && ui.countT < 0.4 ? 0.4 : 0, state.q || 0);
+      renderChrome();
+      if (opticalOn && window.Pad7Optical) {
+        window.Pad7Optical.render({ state: state, ui: ui, P: P, vehicle: vehicle, now: ts });
+        drawPlot();
+      } else {
+        drawSky(ts);
+      }
+      requestAnimationFrame(loop);
+    }
+
+    window.addEventListener("resize", resize);
+    setFidelity("RANGE");
+    syncFlightBar();
+    syncMute();
+    resize();
+    radio("RANGE. FIRING ROOM MANNED. KESTREL I ON THE PAD. OBJECTIVE: LOW EARTH ORBIT.");
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
