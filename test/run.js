@@ -3,7 +3,7 @@
 const { spawnSync } = require("child_process");
 const path = require("path");
 
-const files = ["physics.test.js", "audio.test.js", "architecture.test.js"];
+const files = ["physics.test.js", "audio.test.js", "architecture.test.js", "optical.test.js", "desk.test.js"];
 let failed = 0;
 files.forEach(function (file) {
   console.log("\n== " + file + " ==");

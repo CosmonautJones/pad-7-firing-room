@@ -10,7 +10,7 @@ The window is the show: pad, tower, downrange site, chase, limb, map. Three.js f
 
 ## Decision
 
-Vendor `three.min.js` r160. `optical.js` is an IIFE that talks to `THREE` and exposes `Pad7Optical.{init,resize,render,reset}`. Logarithmic depth, ACES, generated Earth maps, additive plume (not a composer). If WebGL fails, `PAD-7.html` falls back to the 2D canvas path.
+Vendor `three.min.js` r160. `optical.js` is an IIFE that talks to `THREE` and exposes `Pad7Optical.{init,resize,render,reset}`. Logarithmic depth, ACES, embedded NASA Earth maps (see `assets/README.md`), additive plume (not a composer). If WebGL fails, `PAD-7.html` falls back to the 2D canvas path.
 
 3D is forbidden on the desk.
 

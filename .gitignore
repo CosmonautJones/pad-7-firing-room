@@ -4,3 +4,6 @@ Thumbs.db
 .idea/
 .vscode/
 node_modules/
+
+# Local browser verification captures
+artifacts/

@@ -5,10 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#1c1610" />
   <title>PAD-7 Firing Room</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Teko:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%231c1610' width='32' height='32'/%3E%3Crect fill='%23c4a15a' x='0' y='0' width='32' height='4'/%3E%3Ctext x='16' y='24' text-anchor='middle' fill='%23e8d9b4' font-family='Arial Narrow,sans-serif' font-size='18' font-weight='700'%3E7%3C/text%3E%3C/svg%3E" />
   <style>
+    @font-face {
+      font-family: "IBM Plex Mono";
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url("fonts/ibm-plex-mono-400.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "IBM Plex Mono";
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url("fonts/ibm-plex-mono-500.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: Teko;
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url("fonts/teko-500.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: Teko;
+      font-style: normal;
+      font-weight: 600;
+      font-display: swap;
+      src: url("fonts/teko-600.woff2") format("woff2");
+    }
     :root {
       --paper: #e8d9b4;
       --paper-2: #d7c49a;
@@ -33,31 +59,40 @@
     }
     button, input { font: inherit; color: inherit; cursor: pointer; }
     button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
-    button:active { filter: brightness(0.88); }
-    button:disabled { opacity: 0.42; cursor: not-allowed; filter: none; }
+    button:disabled { opacity: 0.42; cursor: not-allowed; filter: none; transform: none; }
     .skip {
-      position: absolute; left: 10px; top: 10px; z-index: 30;
+      position: absolute; left: 10px; top: 10px; z-index: 40;
       background: var(--paper); color: var(--ink); padding: 8px 12px;
       transform: translateY(-160%);
     }
     .skip:focus { transform: none; }
 
-    .room { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; overflow: hidden; }
+    .room { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; overflow: hidden; position: relative; }
+    .room::after {
+      content: "";
+      position: fixed; inset: 0;
+      pointer-events: none;
+      z-index: 20;
+      opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.9'/%3E%3C/svg%3E");
+    }
     .mast {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center;
       gap: 10px;
-      padding: 4px 12px;
-      background: linear-gradient(#2a2118, var(--oak));
+      padding: 5px 14px 6px;
+      background:
+        linear-gradient(180deg, #3a2e22 0%, var(--oak) 58%, #120e0a 100%);
       color: var(--paper);
-      border-bottom: 2px solid var(--brass);
+      border-bottom: 3px solid var(--brass);
+      box-shadow: inset 0 1px 0 rgba(232,217,180,0.12);
       min-height: 0;
     }
     .mark { display: flex; flex-direction: column; line-height: 0.82; }
     .mark h1 { margin: 0; font-family: Teko, "Arial Narrow", Impact, sans-serif; font-size: 32px; font-weight: 600; letter-spacing: 0.1em; }
     .mark span { color: var(--brass); font-size: 9px; letter-spacing: 0.22em; }
-    .clock { text-align: center; font-family: Teko, sans-serif; font-size: 42px; letter-spacing: 0.04em; line-height: 0.82; font-variant-numeric: tabular-nums; }
+    .clock { text-align: center; font-family: Teko, sans-serif; font-size: 42px; letter-spacing: 0.04em; line-height: 0.86; font-variant-numeric: tabular-nums; text-shadow: 0 1px 0 #000; }
     .clock small { display: block; font-family: "IBM Plex Mono", monospace; font-size: 9px; letter-spacing: 0.28em; color: var(--brass); }
     .mast-right { justify-self: end; text-align: right; color: var(--paper-2); font-size: 11px; }
     .stamp { display: inline-block; margin-top: 2px; padding: 1px 8px; border: 2px solid currentColor; font-family: Teko, sans-serif; font-size: 20px; letter-spacing: 0.14em; }
@@ -69,74 +104,167 @@
     .window { position: relative; min-height: 0; background: #0b1018; overflow: hidden; }
     canvas { width: 100%; height: 100%; display: block; }
     .window-chrome {
-      position: absolute; inset: 10px 14px auto 14px; display: flex; justify-content: space-between;
+      position: absolute; inset: 12px 16px auto 16px; display: flex; justify-content: space-between;
       color: #efe4c8; font-size: 10px; letter-spacing: 0.18em; text-shadow: 0 1px 0 #000; pointer-events: none;
     }
     .radio-tape {
-      position: absolute; left: 14px; right: 14px; top: 28px;
+      position: absolute; left: 16px; right: 16px; top: 30px;
       color: #e4d2a4; font-size: 11px; letter-spacing: 0.16em; text-shadow: 0 1px 2px #000;
       pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .callout {
-      position: absolute; left: 18px; bottom: 28px; font-family: Teko, sans-serif;
-      font-size: clamp(42px, 8vw, 92px); letter-spacing: 0.1em; line-height: 0.85;
-      color: #f4ead0; text-shadow: 0 3px 0 #111, 0 0 28px rgba(196,161,90,0.35);
-      opacity: 0; transform: translateY(8px) scale(1.04); pointer-events: none;
+      position: absolute; left: 18px; bottom: 76px; font-family: Teko, sans-serif;
+      font-size: clamp(28px, 4.6vw, 64px); letter-spacing: 0.16em; line-height: 0.9;
+      color: #f4ead0; text-shadow: 0 2px 0 #111;
+      opacity: 0; transform: translateY(8px); pointer-events: none;
       transition: opacity 0.15s linear, transform 1.6s ease-out;
     }
-    .callout.show { opacity: 1; transform: none; }
+    .callout.show { opacity: 1; transform: none; box-shadow: inset 0 -3px 0 #c4a15a; }
+    #sky { touch-action: none; cursor: grab; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    #sky.dragging { cursor: grabbing; }
+    #sky:focus-visible { outline: 2px solid var(--brass); outline-offset: -10px; }
+    .optical-tools {
+      position: absolute; right: 16px; bottom: 16px; z-index: 3;
+      display: flex; align-items: center; gap: 5px; padding: 5px;
+      color: var(--paper); background: #211b13; border: 1px solid #9b8048;
+      box-shadow: 0 3px 12px #0006, inset 0 1px 0 #e8d9b422;
+    }
+    .optical-tools[hidden], .optical-tools button[hidden] { display: none; }
+    .optical-tools button {
+      min-height: 36px; padding: 4px 10px; border: 1px solid #756443;
+      background: linear-gradient(#3d3324, #282016); color: #f0e4c6;
+      font: 18px Teko, sans-serif; letter-spacing: 0.07em; cursor: pointer;
+    }
+    .optical-tools button:hover { background: #54452c; }
+    .optical-tools button:focus-visible { outline: 2px solid #f2d98b; outline-offset: 2px; }
+    .optical-tools button:active { box-shadow: inset 0 2px 5px #0009; }
+    .optical-tools .zoom-btn { width: 36px; font-family: "IBM Plex Mono", monospace; }
+    .optical-tools .engaged { color: #211b13; background: #d8bc77; }
+    .optical-hint { margin: 0 6px; font-size: 9px; letter-spacing: 0.1em; }
+    .photo-status { position: absolute; top: 18px; left: 20px; color: #eadbb8; font-size: 11px; letter-spacing: 0.15em; text-shadow: 0 1px 3px #000; }
+    .photo-mode .mast, .photo-mode .desk, .photo-mode .mosaic,
+    .photo-mode .window-chrome, .photo-mode .radio-tape, .photo-mode .callout, .photo-mode .pane { display: none; }
+    .photo-mode .room, .photo-mode .body { display: block; height: 100%; }
+    .photo-mode .window { height: 100%; }
+    @media (max-width: 720px) {
+      .optical-hint { display: none; }
+      .optical-tools { right: 12px; bottom: 12px; }
+      .optical-tools button { min-height: 38px; }
+      .window .callout { bottom: 70px; font-size: 32px; }
+    }
     .pane {
       position: absolute; inset: 0; pointer-events: none;
-      box-shadow: inset 0 0 80px rgba(0,0,0,0.35), inset 0 0 0 3px #1c1610;
+      box-shadow:
+        inset 0 0 0 6px #1c1610,
+        inset 0 0 0 7px var(--brass),
+        inset 0 40px 80px rgba(0,0,0,0.28);
+    }
+    .pane::after {
+      content: "";
+      position: absolute; inset: 8px 18% auto 8px; height: 18%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.07), transparent);
+      pointer-events: none;
     }
 
     .desk {
       background: var(--paper);
       background-image:
-        repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(139,31,20,0.05) 24px),
-        repeating-linear-gradient(90deg, transparent, transparent 23px, rgba(139,31,20,0.05) 24px);
-      display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; overflow: hidden; /* tabs, actions, scroll */
+        radial-gradient(ellipse at 12% 0%, rgba(255,255,255,0.18), transparent 42%),
+        repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(139,31,20,0.06) 24px),
+        repeating-linear-gradient(90deg, transparent, transparent 23px, rgba(139,31,20,0.06) 24px);
+      box-shadow: inset 8px 0 18px rgba(80,50,20,0.12);
+      display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; overflow: hidden;
     }
     .fidelity { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 2px solid var(--ink); }
     .fidelity button { background: transparent; border: 0; border-right: 1px solid var(--rule); padding: 9px 4px 7px; font-family: Teko, sans-serif; font-size: 20px; letter-spacing: 0.12em; }
-    .fidelity button[aria-selected="true"], .fidelity button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+    .fidelity button[aria-selected="true"], .fidelity button[aria-pressed="true"] {
+      background: var(--ink); color: var(--paper);
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.55);
+    }
     .fidelity .sub { display: block; font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.12em; color: #3d362c; }
     .fidelity button[aria-selected="true"] .sub, .fidelity button[aria-pressed="true"] .sub { color: var(--brass); }
     .brief { padding: 6px 12px; border-bottom: 1px solid var(--rule); color: #3d362c; line-height: 1.4; }
     .pinned { padding: 8px 12px; border-bottom: 1px solid var(--rule); }
-    .desk-scroll { padding: 8px 12px 16px; overflow: auto; min-height: 0; }
+    .desk-scroll {
+      display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+      padding: 8px 12px 10px;
+    }
     .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
     .pinned .row { margin-bottom: 6px; }
     .pinned .row:last-child { margin-bottom: 0; }
-    .btn { background: var(--oak); color: var(--paper); border: 0; padding: 8px 12px; font-family: Teko, sans-serif; font-size: 18px; letter-spacing: 0.12em; min-height: 40px; }
-    .btn:hover { filter: brightness(1.12); }
-    .btn.go { background: var(--go); } .btn.abort { background: var(--abort); }
-    .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+    .btn {
+      background: linear-gradient(#2c241a, var(--oak));
+      color: var(--paper);
+      border: 1px solid #0a0806;
+      padding: 8px 12px;
+      font-family: Teko, sans-serif;
+      font-size: 18px;
+      letter-spacing: 0.12em;
+      min-height: 40px;
+      box-shadow: inset 0 1px 0 rgba(232,217,180,0.16), 0 1px 0 #000;
+      transition: transform 0.08s ease, filter 0.12s ease;
+    }
+    .btn:hover { filter: brightness(1.1); }
+    .btn:active { transform: translateY(1px); box-shadow: inset 0 2px 4px rgba(0,0,0,0.55); }
+    .btn.go { background: linear-gradient(#3a8552, var(--go)); }
+    .btn.abort { background: linear-gradient(#c42a20, var(--abort)); }
+    .btn.ghost {
+      background: linear-gradient(rgba(255,255,255,0.28), rgba(255,255,255,0.08));
+      color: var(--ink);
+      border: 1px solid var(--ink);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+    }
     .btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
-    .keys { color: #3d362c; font-size: 11px; margin: 0 0 8px; line-height: 1.4; }
+    .keys { color: #3d362c; font-size: 11px; letter-spacing: 0.03em; margin: 2px 0 0; line-height: 1.45; }
     .telem { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
-    .readout { border: 1px solid var(--ink); padding: 6px 8px 4px; background: rgba(255,255,255,0.35); }
+    .readout {
+      border: 1px solid #8a7350;
+      padding: 6px 8px 4px;
+      background: #f3e6c4;
+      box-shadow: inset 0 2px 4px rgba(80,50,20,0.18);
+    }
     .readout label { display: block; font-size: 10px; letter-spacing: 0.14em; color: #3d362c; }
     .readout b { font-family: Teko, sans-serif; font-size: 24px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
-    fieldset { border: 1px solid var(--ink); margin: 0 0 10px; padding: 8px 10px; background: rgba(255,255,255,0.22); }
+    fieldset { border: 1px solid var(--ink); margin: 0 0 10px; padding: 8px 10px; background: rgba(255,255,255,0.18); }
     legend { font-family: Teko, sans-serif; font-size: 17px; letter-spacing: 0.12em; padding: 0 6px; }
     .ctrl { margin: 8px 0; }
     .ctrl-top { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: 0.08em; margin-bottom: 3px; }
     input[type="range"] { width: 100%; accent-color: var(--abort); height: 22px; }
-    .plot-wrap { height: 72px; margin: 0 0 8px; border: 1px solid var(--ink); background: #1a140c; }
-    #plot { width: 100%; height: 100%; }
-    .log { height: 78px; overflow: auto; background: var(--oak); color: #e8d7b0; padding: 8px; font-size: 11px; line-height: 1.4; }
+    .plot-wrap {
+      position: relative; height: 96px; flex: none; margin: 0 0 8px;
+      border: 1px solid var(--ink); background: #1a140c;
+      box-shadow: inset 0 2px 8px #000, inset 0 0 0 1px #3a2c18;
+    }
+    .plot-legend {
+      position: absolute; left: 8px; right: 8px; top: 5px; z-index: 1;
+      display: flex; justify-content: space-between;
+      color: #8a7044; font-size: 9px; letter-spacing: 0.16em; pointer-events: none;
+    }
+    #plot { width: 100%; height: 100%; display: block; }
+    .log {
+      flex: 1 1 auto; min-height: 72px; height: auto; overflow: auto;
+      background: var(--oak); color: #e8d7b0; padding: 8px 8px 10px;
+      font-size: 11px; line-height: 1.45; box-shadow: inset 0 2px 6px #000;
+    }
+    .log-row { display: grid; grid-template-columns: 68px minmax(0, 1fr); gap: 8px; margin: 0 0 3px; }
+    .log-t { color: #c4a15a; font-variant-numeric: tabular-nums; }
     .missions { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; }
     .chip { border: 1px dashed var(--ink-dim); padding: 3px 8px; font-size: 10px; letter-spacing: 0.12em; color: var(--ink-dim); }
     .chip.on { border-style: solid; border-color: var(--go); color: var(--go); background: rgba(44,107,67,0.12); }
 
     .mosaic { display: grid; grid-template-columns: repeat(8, 1fr); background: #14100c; border-top: 3px solid var(--brass); flex-shrink: 0; }
-    .lamp { padding: 6px 2px; text-align: center; color: #c4b8a4; border-right: 1px solid #000; min-height: 40px; }
+    .lamp {
+      padding: 6px 2px; text-align: center; color: #7a7064;
+      border-right: 1px solid #000; min-height: 40px;
+      background: #0e0c0a;
+      box-shadow: inset 0 3px 7px #000;
+    }
     .lamp b { display: block; font-family: Teko, sans-serif; font-size: 17px; letter-spacing: 0.1em; }
     .lamp span { font-size: 9px; letter-spacing: 0.12em; }
-    .lamp.on { color: #0d1a10; background: #3d9a5c; }
-    .lamp.warn { color: #1a1404; background: var(--caution); }
-    .lamp.bad { color: #fff; background: var(--abort); }
+    .lamp.on { color: #0d1a10; background: radial-gradient(ellipse at 50% 28%, #62c47c, #2f7a48); box-shadow: inset 0 1px 0 rgba(255,255,255,0.28); }
+    .lamp.warn { color: #1a1404; background: radial-gradient(ellipse at 50% 28%, #e0b84a, var(--caution)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.22); }
+    .lamp.bad { color: #fff; background: radial-gradient(ellipse at 50% 28%, #d64538, var(--abort)); }
 
     @media (max-width: 980px) {
       .body { grid-template-columns: 1fr; grid-template-rows: minmax(0, 40vh) minmax(0, 1fr); }
@@ -152,20 +280,21 @@
       .lamp { min-height: 32px; padding: 3px 1px; }
       .lamp b { font-size: 12px; }
       .lamp span { font-size: 8px; }
-      .callout { font-size: 36px; bottom: 12px; }
+      .callout { font-size: 28px; bottom: 64px; }
       .btn { min-height: 38px; font-size: 16px; padding: 6px 10px; }
     }
     @media (max-height: 700px) {
       .body { grid-template-rows: minmax(0, 38vh) minmax(0, 1fr); }
       .clock { font-size: 26px; }
-      .plot-wrap { height: 48px; }
-      .log { height: 48px; }
+      .plot-wrap { height: 64px; }
+      .log { min-height: 48px; }
     }
     @media (max-width: 980px) and (max-height: 700px) {
       .body { grid-template-rows: minmax(0, 36vh) minmax(0, 1fr); }
     }
     @media (prefers-reduced-motion: reduce) {
       .callout { transition: opacity 0.2s; transform: none; }
+      .btn { transition: none; }
     }
   </style>
 </head>
@@ -177,7 +306,7 @@
         <span>EASTERN RANGE / COMPLEX 7</span>
         <h1>PAD-7</h1>
       </div>
-      <div class="clock" id="clock" aria-live="polite">HOLD<small>RANGE CLOCK</small></div>
+      <div class="clock" id="clock" aria-live="polite"><span id="clockFace">HOLD</span><small>RANGE CLOCK</small></div>
       <div class="mast-right">
         <div>VEHICLE <b id="vehName">KESTREL I</b></div>
         <div id="wx">CEILING UNLIMITED · WIND 7 KTS E</div>
@@ -187,7 +316,8 @@
     </header>
     <main class="body">
       <section class="window" aria-label="Range optical">
-        <canvas id="sky" role="img" aria-label="Dawn at Complex 7. Kestrel I on the pad."></canvas>
+        <canvas id="sky" role="img" tabindex="0" aria-label="Dawn at Complex 7. Kestrel I on the pad." aria-describedby="opticalHelp"></canvas>
+        <span id="opticalHelp" class="sr-only">Drag or use arrow keys while this window is focused to orbit. Scroll, pinch, or use plus and minus to zoom. Double-click to return to AUTO. P opens photo mode; Escape resumes.</span>
         <div class="pane" aria-hidden="true"></div>
         <div class="window-chrome" aria-hidden="true">
           <div id="camLabel">OPTICAL / AUTO</div>
@@ -195,6 +325,15 @@
         </div>
         <div class="radio-tape" id="radio" aria-live="polite">RANGE. FIRING ROOM MANNED. VEHICLE IS ON THE PAD.</div>
         <div class="callout" id="callout"></div>
+        <div class="photo-status" id="photoStatus" role="status" hidden>PHOTO / FLIGHT PAUSED</div>
+        <div class="optical-tools" id="opticalTools" role="group" aria-label="Optical camera controls" hidden>
+          <span class="optical-hint" id="opticalHint">DRAG / SCROLL</span>
+          <button class="zoom-btn" id="zoomOut" type="button" aria-label="Zoom out" title="Zoom out (-)">−</button>
+          <button class="zoom-btn" id="zoomIn" type="button" aria-label="Zoom in" title="Zoom in (+)">+</button>
+          <button id="autoView" type="button" aria-label="Return to AUTO" title="Return to AUTO (double-click window)">AUTO</button>
+          <button id="savePhoto" type="button" title="Save a PNG up to 3840 pixels on its longest edge" hidden>SAVE 4K</button>
+          <button id="photoBtn" type="button" aria-pressed="false" title="Photo mode (P)">PHOTO</button>
+        </div>
       </section>
       <aside class="desk" id="desk">
         <div class="fidelity" role="tablist" aria-label="Desk">
@@ -219,14 +358,29 @@
           <p class="keys" id="keys"></p>
         </div>
         <div class="desk-scroll">
-          <div class="missions" id="missions"></div>
-          <div class="telem" id="telem"></div>
-          <div class="plot-wrap"><canvas id="plot" aria-label="Altitude versus downrange plot"></canvas></div>
+          <div class="missions" id="missions">
+            <span class="chip" id="chipKarman">KARMAN</span>
+            <span class="chip" id="chipSounding">SOUNDING</span>
+            <span class="chip" id="chipOrbit">ORBIT</span>
+            <span class="chip" id="chipEscape">ESCAPE</span>
+          </div>
+          <div class="telem" id="telem">
+            <div class="readout"><label>ALTITUDE</label><b id="readAlt">1 m</b></div>
+            <div class="readout"><label>VELOCITY</label><b id="readVel">0 m/s</b></div>
+            <div class="readout"><label>MACH</label><b id="readMach">0.00</b></div>
+            <div class="readout"><label>APOAPSIS</label><b id="readApo">—</b></div>
+            <div class="readout"><label>PERIAPSIS</label><b id="readPeri">—</b></div>
+            <div class="readout"><label>FUEL</label><b id="readFuel">—</b></div>
+          </div>
+          <div class="plot-wrap">
+            <div class="plot-legend" aria-hidden="true"><span>ALTITUDE</span><span>DOWNRANGE</span></div>
+            <canvas id="plot" aria-label="Altitude versus downrange plot"></canvas>
+          </div>
           <div id="controls"></div>
           <fieldset>
             <legend>PRESETS</legend>
             <div class="row">
-              <button class="btn ghost" data-preset="kestrel" type="button">KESTREL I</button>
+              <button class="btn ghost" data-preset="kestrel" type="button" aria-pressed="true">KESTREL I</button>
               <button class="btn ghost" data-preset="sparrow" type="button">SPARROW</button>
               <button class="btn ghost" data-preset="heavy" type="button">HEAVY</button>
             </div>
@@ -235,17 +389,29 @@
         </div>
       </aside>
     </main>
-    <footer class="mosaic" id="mosaic"></footer>
+    <footer class="mosaic" id="mosaic">
+      <div class="lamp" data-lamp="prop"><b>PROP</b><span>DARK</span></div>
+      <div class="lamp" data-lamp="guid"><b>GUID</b><span>DARK</span></div>
+      <div class="lamp" data-lamp="range"><b>RANGE</b><span>DARK</span></div>
+      <div class="lamp" data-lamp="track"><b>TRACK</b><span>DARK</span></div>
+      <div class="lamp" data-lamp="maxq"><b>MAX-Q</b><span>DARK</span></div>
+      <div class="lamp" data-lamp="fuel"><b>FUEL</b><span>DARK</span></div>
+      <div class="lamp" data-lamp="orbit"><b>ORBIT</b><span>DARK</span></div>
+      <div class="lamp" data-lamp="go"><b>GO</b><span>DARK</span></div>
+    </footer>
   </div>
   <script src="physics.js"></script>
   <script src="three.min.js"></script>
+  <script src="assets/earth.js"></script>
   <script src="optical.js"></script>
   <script src="audio.js"></script>
+  <script src="desk.js"></script>
   <script>
     const P = window.Pad7Physics;
-    if (!P) {
-      document.body.textContent = "RANGE. physics.js is missing from this folder.";
-      throw new Error("Pad7Physics missing");
+    const Desk = window.Pad7Desk;
+    if (!P || !Desk) {
+      document.body.textContent = "RANGE. physics.js or desk.js is missing from this folder.";
+      throw new Error("Pad7 scripts missing");
     }
     const Sound = (window.Pad7Audio && window.Pad7Audio.create)
       ? window.Pad7Audio.create()
@@ -268,20 +434,8 @@
     const pctx = plot.getContext("2d");
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const BRIEFS = {
-      RANGE: "Blockhouse. Arm the countdown, ride the pitch program, warp the clock. Staging and circularization are automatic.",
-      PILOT: "You own attitude and staging. A/D pitch, W/S throttle, X stage. Guidance can still fly the gravity turn.",
-      PROP: "Propulsion bench. Specific impulse, thrust, masses, and drag change how the same flying feels.",
-      STACK: "Vehicle designer. Add stages, change payload, even resize the planet. Reset applies a new stack.",
-    };
-    const LAMPS = [
-      { id: "prop", name: "PROP" }, { id: "guid", name: "GUID" }, { id: "range", name: "RANGE" },
-      { id: "track", name: "TRACK" }, { id: "maxq", name: "MAX-Q" }, { id: "fuel", name: "FUEL" },
-      { id: "orbit", name: "ORBIT" }, { id: "go", name: "GO" },
-    ];
-
     const ui = {
-      fidelity: "RANGE", guidance: true, timeWarp: 1, camera: "auto", muted: false,
+      fidelity: "RANGE", guidance: true, timeWarp: 1, camera: "auto", muted: false, photo: false, visualTime: 0,
       history: [], plot: [], stars: null, particles: [],
       phase: "hold", countT: 10, lastCount: 11,
       callout: "", calloutUntil: 0, radio: "RANGE. FIRING ROOM MANNED. VEHICLE IS ON THE PAD.",
@@ -294,15 +448,30 @@
     let state = P.createState(vehicle);
     let running = false;
     let lastTs = 0;
+    let plotDpr = 1;
 
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el && el.textContent !== value) el.textContent = value;
+    }
     function log(line) {
       const el = document.getElementById("log");
-      el.textContent = formatClock(displayTime()) + "  " + line + "\n" + el.textContent.split("\n").slice(0, 36).join("\n");
+      const row = document.createElement("div");
+      row.className = "log-row";
+      const time = document.createElement("span");
+      time.className = "log-t";
+      time.textContent = Desk.formatClock(ui.phase, displayTime());
+      const msg = document.createElement("span");
+      msg.textContent = line;
+      row.appendChild(time);
+      row.appendChild(msg);
+      el.insertBefore(row, el.firstChild);
+      while (el.children.length > 24) el.removeChild(el.lastChild);
     }
     function radio(line) {
       ui.radio = line;
-      document.getElementById("radio").textContent = line;
-      log(line.toLowerCase());
+      setText("radio", line);
+      log(line);
     }
     function slam(text, seconds) {
       ui.callout = text;
@@ -315,47 +484,6 @@
       if (ui.phase === "hold") return 0;
       if (ui.phase === "count") return -ui.countT;
       return state.t;
-    }
-    function formatClock(t) {
-      if (ui.phase === "hold") return "HOLD";
-      const sign = t < 0 ? "T-" : "T+";
-      const s = Math.abs(t);
-      const m = Math.floor(s / 60);
-      const sec = s - m * 60;
-      return sign + String(m).padStart(2, "0") + ":" + sec.toFixed(1).padStart(4, "0");
-    }
-    function formatAlt(m) {
-      if (!isFinite(m)) return "—";
-      if (Math.abs(m) >= 1000) return (m / 1000).toFixed(1) + " km";
-      return Math.round(m) + " m";
-    }
-    function formatOrbitAlt(m) {
-      if (!isFinite(m)) return "—";
-      const alt = P.altitude(state);
-      if (m < 0 && alt < 30000) return "—";
-      if (alt < 3000 && Math.abs(m) < 8000) return "—";
-      return formatAlt(m);
-    }
-    function phaseHint() {
-      const desk = {
-        RANGE: "Guidance flies the gravity turn and circularizes.",
-        PILOT: "You pitch, throttle, and stage.",
-        PROP: "Engine and drag numbers are live.",
-        STACK: "Change the vehicle or planet, then reset to apply the stack.",
-      };
-      if (ui.phase === "hold") return "Arm the countdown. " + desk[ui.fidelity];
-      if (ui.phase === "count") return "Counting. Hold Count stops the clock. Commit skips to ignition.";
-      if (state.crashed) return "Impact. Reset to roll out another stack.";
-      if (ui.missions.orbit) return "Orbit. Watch the map, or reset for another attempt.";
-      if (ui.missions.sounding) return "Apogee. Sparrow has the data. Splashdown is the recovery.";
-      if (ui.fidelity === "RANGE") return "Warp the clock — a real ascent takes about 10 minutes.";
-      return desk[ui.fidelity];
-    }
-    function keyHint() {
-      if (ui.phase === "hold") return "I arm countdown   R reset   1–4 desk   M mute";
-      if (ui.phase === "count") return "I commit   / hold count   R reset";
-      if (ui.fidelity === "RANGE") return ". faster clock   , slower   C view   / abort   R reset";
-      return "W/S throttle   A/D pitch   X stage   . clock   / abort   R reset";
     }
     const VIEW_NAME = {
       auto: "AUTO", pad: "PAD", tower: "TOWER", downrange: "SITE",
@@ -379,8 +507,12 @@
         warp.textContent = "CLOCK " + ui.timeWarp + "×";
         abortBtn.disabled = state.crashed; abortBtn.textContent = "ABORT";
       }
-      document.getElementById("brief").textContent = phaseHint();
-      document.getElementById("keys").textContent = keyHint();
+      setText("brief", Desk.phaseHint(ui.phase, ui.fidelity, {
+        crashed: state.crashed,
+        orbit: ui.missions.orbit,
+        sounding: ui.missions.sounding,
+      }));
+      setText("keys", Desk.keyHint(ui.phase, ui.fidelity));
     }
     function syncFlightBar() {
       document.getElementById("warpBtn").textContent = "CLOCK " + ui.timeWarp + "×";
@@ -388,6 +520,7 @@
       const g = document.getElementById("guidBtn");
       g.textContent = ui.guidance ? "GUIDANCE ON" : "GUIDANCE OFF";
       g.setAttribute("aria-pressed", String(ui.guidance));
+      syncOptics();
     }
 
     function reset(kind) {
@@ -506,11 +639,57 @@
       if (ui.phase === "flight") syncPrimary();
     }
     function cycleCam() {
+      if (opticalOn) window.Pad7Optical.recenter();
       const steps = ["auto", "pad", "tower", "downrange", "chase", "limb", "map"];
       const i = steps.indexOf(ui.camera === "track" ? "downrange" : ui.camera);
       ui.camera = steps[(i < 0 ? 0 : i + 1) % steps.length];
       document.getElementById("camLabel").textContent = "OPTICAL / " + (VIEW_NAME[ui.camera] || ui.camera.toUpperCase());
       syncFlightBar();
+      syncOptics();
+    }
+
+    function syncOptics() {
+      if (!opticalOn) return;
+      const manual = window.Pad7Optical.manual;
+      document.getElementById("camLabel").textContent = "OPTICAL / " + (manual ? "HAND" : VIEW_NAME[ui.camera]);
+      document.getElementById("camBtn").textContent = "VIEW " + (manual ? "HAND" : VIEW_NAME[ui.camera]);
+      document.getElementById("opticalHint").textContent = manual ? "HAND / DRAG TO ORBIT" : "DRAG / SCROLL";
+      document.getElementById("autoView").classList.toggle("engaged", manual);
+    }
+    function returnToAuto() {
+      ui.camera = "auto";
+      window.Pad7Optical.recenter();
+      syncFlightBar();
+      syncOptics();
+    }
+    let photoFocus = null;
+    function setPhoto(on) {
+      if (!opticalOn || ui.photo === on) return;
+      if (on) photoFocus = document.activeElement;
+      ui.photo = on;
+      Object.keys(keysDown).forEach(function (key) { delete keysDown[key]; });
+      document.body.classList.toggle("photo-mode", on);
+      document.getElementById("savePhoto").hidden = !on;
+      document.getElementById("photoStatus").hidden = !on;
+      document.getElementById("photoStatus").textContent = "PHOTO / FLIGHT PAUSED";
+      const button = document.getElementById("photoBtn");
+      button.textContent = on ? "RESUME" : "PHOTO";
+      button.setAttribute("aria-pressed", String(on));
+      resize();
+      if (on) button.focus({ preventScroll: true });
+      else if (photoFocus && photoFocus.isConnected) photoFocus.focus({ preventScroll: true });
+    }
+    function savePhoto() {
+      if (!ui.photo) return;
+      try {
+        const link = document.createElement("a");
+        link.download = "PAD-7-" + vehicle.name.replace(/[^a-z0-9]+/gi, "-") + "-T" + Math.floor(state.t) + "-" + Date.now() + ".png";
+        link.href = window.Pad7Optical.capturePng();
+        link.click();
+        document.getElementById("photoStatus").textContent = "PNG READY / FLIGHT PAUSED";
+      } catch (err) {
+        document.getElementById("photoStatus").textContent = "CAPTURE FAILED / TRY AGAIN";
+      }
     }
 
     function syncMute() {
@@ -571,7 +750,19 @@
 
     const keysDown = {};
     window.addEventListener("keydown", function (e) {
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.target.matches("input, textarea, select") || e.target.isContentEditable) return;
+      if (e.target.matches("button") && (e.key === " " || e.key === "Enter")) return;
+      if (opticalOn && !e.repeat && e.key.toLowerCase() === "p") { e.preventDefault(); setPhoto(!ui.photo); return; }
+      if (e.key === "Escape" && ui.photo) { e.preventDefault(); setPhoto(false); return; }
+      if (opticalOn && ["+", "=", "-", "_"].includes(e.key)) { e.preventDefault(); window.Pad7Optical.zoom(e.key === "+" || e.key === "=" ? 0.85 : 1 / 0.85); return; }
+      if (ui.photo) {
+        if (!e.repeat && e.key.toLowerCase() === "c") cycleCam();
+        if (!e.repeat && e.key.toLowerCase() === "m") { Sound.setMuted(!Sound.isMuted()); syncMute(); }
+        return;
+      }
       keysDown[e.key.toLowerCase()] = true;
+      if (e.repeat) return;
       if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(e.key.toLowerCase())) e.preventDefault();
       if (e.key === "i" || e.key === "I" || e.key === " ") armOrCommit();
       if (e.key === "/") abort();
@@ -589,6 +780,16 @@
       if (e.key >= "1" && e.key <= "4") setFidelity(["RANGE", "PILOT", "PROP", "STACK"][Number(e.key) - 1]);
     });
     window.addEventListener("keyup", function (e) { keysDown[e.key.toLowerCase()] = false; });
+    window.addEventListener("blur", function () { Object.keys(keysDown).forEach(function (key) { delete keysDown[key]; }); });
+
+    document.getElementById("opticalTools").hidden = !opticalOn;
+    sky.addEventListener("opticalchange", syncOptics);
+    sky.addEventListener("opticalrecenter", returnToAuto);
+    document.getElementById("zoomIn").addEventListener("click", function () { window.Pad7Optical.zoom(0.85); });
+    document.getElementById("zoomOut").addEventListener("click", function () { window.Pad7Optical.zoom(1 / 0.85); });
+    document.getElementById("autoView").addEventListener("click", returnToAuto);
+    document.getElementById("photoBtn").addEventListener("click", function () { setPhoto(!ui.photo); });
+    document.getElementById("savePhoto").addEventListener("click", savePhoto);
 
     document.getElementById("ignite").addEventListener("click", armOrCommit);
     document.getElementById("abort").addEventListener("click", abort);
@@ -608,6 +809,7 @@
         if (btn.dataset.preset === "sparrow") vehicle = P.soundingVehicle();
         if (btn.dataset.preset === "heavy") vehicle = P.heavyVehicle();
         document.getElementById("vehName").textContent = vehicle.name.toUpperCase();
+        markPreset(vehicle.name);
         reset("new vehicle rolled out: " + vehicle.name + ".");
         drawControls();
       });
@@ -727,9 +929,25 @@
       ui.particles = ui.particles.filter(function (p) { return p.age < p.life; });
     }
 
+    function paintChip(id, on) {
+      const el = document.getElementById(id);
+      const next = on ? "chip on" : "chip";
+      if (el.className !== next) el.className = next;
+    }
+    function paintLamp(id, lampState) {
+      const el = document.querySelector('[data-lamp="' + id + '"]');
+      if (!el || el.dataset.state === lampState) return;
+      el.dataset.state = lampState;
+      el.className = "lamp" + (lampState ? " " + lampState : "");
+      el.querySelector("span").textContent = Desk.lampWord(lampState);
+    }
+    function markPreset(name) {
+      const id = Desk.presetId(name);
+      document.querySelectorAll("[data-preset]").forEach(function (btn) {
+        btn.setAttribute("aria-pressed", String(btn.dataset.preset === id));
+      });
+    }
     function renderChrome() {
-      const t = displayTime();
-      document.getElementById("clock").innerHTML = formatClock(t) + "<small>RANGE CLOCK</small>";
       const flight = P.classifyFlight(state);
       const stamp = document.getElementById("statusStamp");
       let label = "HOLD"; let cls = "hold";
@@ -743,50 +961,48 @@
         if (flight === "reentry" && !ui.missions.sounding) { label = "REENTRY"; cls = "abort"; }
         if (flight === "reentry" && ui.missions.sounding) { label = "REENTRY"; cls = "go"; }
       }
-      stamp.className = "stamp " + cls;
-      stamp.textContent = label;
+      const nextClass = "stamp " + cls;
+      if (stamp.className !== nextClass) stamp.className = nextClass;
+      if (stamp.textContent !== label) stamp.textContent = label;
+      setText("clockFace", Desk.formatClock(ui.phase, displayTime()));
 
       const el = P.orbitalElements(state);
       const fuel = state.fuelKg[state.stage];
-      const cells = [
-        ["ALTITUDE", formatAlt(P.altitude(state))],
-        ["VELOCITY", Math.round(el.speed) + " m/s"],
-        ["MACH", (state.mach || 0).toFixed(2)],
-        ["APOAPSIS", formatOrbitAlt(el.apoapsisAltitude)],
-        ["PERIAPSIS", formatOrbitAlt(el.periapsisAltitude)],
-        ["FUEL", Math.round(fuel) + " kg"],
-      ];
-      document.getElementById("telem").innerHTML = cells.map(function (c) {
-        return '<div class="readout"><label>' + c[0] + "</label><b>" + c[1] + "</b></div>";
-      }).join("");
-      document.getElementById("missions").innerHTML =
-        '<span class="chip' + (ui.missions.karman ? " on" : "") + '">KARMAN</span>' +
-        '<span class="chip' + (ui.missions.sounding ? " on" : "") + '">SOUNDING</span>' +
-        '<span class="chip' + (ui.missions.orbit ? " on" : "") + '">ORBIT</span>' +
-        '<span class="chip' + (ui.missions.escape ? " on" : "") + '">ESCAPE</span>';
+      const alt = P.altitude(state);
+      setText("readAlt", Desk.formatAlt(alt));
+      setText("readVel", Math.round(el.speed) + " m/s");
+      setText("readMach", (state.mach || 0).toFixed(2));
+      setText("readApo", Desk.formatOrbitAlt(el.apoapsisAltitude, alt));
+      setText("readPeri", Desk.formatOrbitAlt(el.periapsisAltitude, alt));
+      setText("readFuel", Math.round(fuel) + " kg");
+      paintChip("chipKarman", ui.missions.karman);
+      paintChip("chipSounding", ui.missions.sounding);
+      paintChip("chipOrbit", ui.missions.orbit);
+      paintChip("chipEscape", ui.missions.escape);
       const skyEl = document.getElementById("sky");
       const view = ui.phase === "flight"
-        ? (ui.missions.orbit ? "Vehicle in orbit around Earth." : "Vehicle in flight. Altitude " + formatAlt(P.altitude(state)) + ".")
+        ? (ui.missions.orbit ? "Vehicle in orbit around Earth." : "Vehicle in flight. Altitude " + Desk.formatAlt(alt) + ".")
         : "Dawn at Complex 7. Kestrel I on the pad.";
-      skyEl.setAttribute("aria-label", view);
+      if (skyEl.getAttribute("aria-label") !== view) skyEl.setAttribute("aria-label", view);
 
-      const lamps = {
-        prop: state.ignited && state.throttle > 0.05 && fuel > 1 ? "on" : "",
-        guid: ui.guidance ? "on" : "",
-        range: state.crashed && !ui.missions.sounding ? "bad" : "on",
-        track: P.altitude(state) > 400 ? "on" : "",
-        maxq: state.maxQPassed ? "on" : (state.q > 15000 ? "warn" : ""),
-        fuel: fuel < 40 ? "warn" : "on",
-        orbit: flight === "orbit" ? "on" : "",
-        go: !state.crashed && (P.twr(state) > 1.05 || flight === "orbit" || ui.phase === "count") ? "on" : "warn",
-      };
-      document.getElementById("mosaic").innerHTML = LAMPS.map(function (l) {
-        const k = lamps[l.id] || "";
-        return '<div class="lamp ' + k + '"><b>' + l.name + "</b><span>" + (k === "on" ? "GREEN" : k === "bad" ? "NO-GO" : k === "warn" ? "CAUTION" : "DARK") + "</span></div>";
-      }).join("");
-      document.getElementById("objLabel").textContent = vehicle.stages.length === 1
+      const lamp = Desk.lamps({
+        ignited: state.ignited,
+        throttle: state.throttle,
+        fuel: fuel,
+        guidance: ui.guidance,
+        crashed: state.crashed,
+        sounding: ui.missions.sounding,
+        altitude: alt,
+        maxQPassed: state.maxQPassed,
+        q: state.q || 0,
+        flight: flight,
+        twr: P.twr(state),
+        phase: ui.phase,
+      });
+      Object.keys(lamp).forEach(function (id) { paintLamp(id, lamp[id]); });
+      setText("objLabel", vehicle.stages.length === 1
         ? (ui.missions.sounding ? "OBJ: SATISFIED — SOUNDING" : "OBJ: SOUNDING — 100 KM")
-        : (ui.missions.orbit ? "OBJ: SATISFIED — LOW EARTH ORBIT" : "OBJ: LOW EARTH ORBIT");
+        : (ui.missions.orbit ? "OBJ: SATISFIED — LOW EARTH ORBIT" : "OBJ: LOW EARTH ORBIT"));
       const thr = document.querySelector("input[data-key=throttle]");
       if (thr && document.activeElement !== thr) {
         thr.value = String(state.throttle);
@@ -1095,29 +1311,9 @@
     }
 
     function drawPlot() {
-      const w = plot.width, h = plot.height;
-      pctx.fillStyle = "#1a140c";
-      pctx.fillRect(0, 0, w, h);
-      pctx.strokeStyle = "rgba(196,161,90,0.18)";
-      for (let x = 0; x < w; x += 22) { pctx.beginPath(); pctx.moveTo(x, 0); pctx.lineTo(x, h); pctx.stroke(); }
-      for (let y = 0; y < h; y += 16) { pctx.beginPath(); pctx.moveTo(0, y); pctx.lineTo(w, y); pctx.stroke(); }
-      pctx.fillStyle = "#8a7a55";
-      pctx.font = "10px IBM Plex Mono, monospace";
-      if (ui.plot.length < 2) {
-        pctx.fillText("amber scope — altitude vs downrange", 8, h / 2);
-        return;
-      }
-      const maxA = Math.max(2000, ...ui.plot.map(function (p) { return p.alt; }));
-      const maxX = Math.max(2000, ...ui.plot.map(function (p) { return Math.abs(p.x); }));
-      pctx.strokeStyle = "#e8b84a";
-      pctx.lineWidth = 1.6;
-      pctx.beginPath();
-      ui.plot.forEach(function (p, i) {
-        const x = 6 + (Math.abs(p.x) / maxX) * (w - 12);
-        const y = h - 6 - (p.alt / maxA) * (h - 12);
-        if (i === 0) pctx.moveTo(x, y); else pctx.lineTo(x, y);
-      });
-      pctx.stroke();
+      const cssW = Number(plot.dataset.cssW) || plot.clientWidth || 1;
+      const cssH = Number(plot.dataset.cssH) || plot.clientHeight || 1;
+      Desk.paintScope(pctx, cssW, cssH, ui.plot, plotDpr);
     }
 
     function resize() {
@@ -1131,39 +1327,47 @@
         sky.height = h;
       }
       const pr = plot.parentElement.getBoundingClientRect();
-      plot.width = Math.max(1, Math.floor(pr.width));
-      plot.height = Math.max(1, Math.floor(pr.height));
+      const cssW = Math.max(1, Math.floor(pr.width));
+      const cssH = Math.max(1, Math.floor(pr.height));
+      plotDpr = Math.min(2, window.devicePixelRatio || 1);
+      plot.dataset.cssW = String(cssW);
+      plot.dataset.cssH = String(cssH);
+      plot.width = Math.max(1, Math.floor(cssW * plotDpr));
+      plot.height = Math.max(1, Math.floor(cssH * plotDpr));
     }
 
     function loop(ts) {
       if (!lastTs) lastTs = ts;
       let dt = Math.min(0.05, (ts - lastTs) / 1000);
       lastTs = ts;
-      if (ui.phase === "count") {
-        const next = ui.countT - dt;
-        const shown = Math.ceil(ui.countT);
-        if (shown < ui.lastCount && shown >= 0) {
-          ui.lastCount = shown;
-          if (shown === 5) radio("T MINUS FIVE. GUIDANCE IS INTERNAL.");
-          else if (shown === 3) radio("T MINUS THREE. TOWER CLEAR.");
-          else if (shown === 1) radio("T MINUS ONE.");
-          else if (shown > 0) radio("T MINUS " + shown + ".");
-          Sound.tick(shown);
-          if (shown === 0) slam("IGNITION", 0.8);
+      if (!ui.photo) {
+        ui.visualTime += dt * 1000;
+        if (ui.phase === "count") {
+          const next = ui.countT - dt;
+          const shown = Math.ceil(ui.countT);
+          if (shown < ui.lastCount && shown >= 0) {
+            ui.lastCount = shown;
+            if (shown === 5) radio("T MINUS FIVE. GUIDANCE IS INTERNAL.");
+            else if (shown === 3) radio("T MINUS THREE. TOWER CLEAR.");
+            else if (shown === 1) radio("T MINUS ONE.");
+            else if (shown > 0) radio("T MINUS " + shown + ".");
+            Sound.tick(shown);
+            if (shown === 0) slam("IGNITION", 0.8);
+          }
+          ui.countT = next;
+          if (ui.countT <= 0) startFlight();
         }
-        ui.countT = next;
-        if (ui.countT <= 0) startFlight();
+        const warp = ui.phase === "flight" ? ui.timeWarp : 1;
+        const simDt = dt * warp;
+        const sub = Math.max(1, Math.ceil(simDt / 0.05));
+        for (let i = 0; i < sub; i += 1) stepFlight(simDt / sub);
+        stepParticles(dt);
       }
-      const warp = ui.phase === "flight" ? ui.timeWarp : 1;
-      const simDt = dt * warp;
-      const sub = Math.max(1, Math.ceil(simDt / 0.05));
-      for (let i = 0; i < sub; i += 1) stepFlight(simDt / sub);
-      stepParticles(dt);
       const thrusting = state.ignited && state.throttle > 0.04 && state.fuelKg[state.stage] > 0 && !state.crashed;
-      Sound.setEngine(thrusting ? state.throttle * (ui.phase === "flight" ? 1 : 0) : ui.phase === "count" && ui.countT < 0.4 ? 0.4 : 0, state.q || 0);
+      Sound.setEngine(ui.photo ? 0 : thrusting ? state.throttle * (ui.phase === "flight" ? 1 : 0) : ui.phase === "count" && ui.countT < 0.4 ? 0.4 : 0, state.q || 0);
       renderChrome();
       if (opticalOn && window.Pad7Optical) {
-        window.Pad7Optical.render({ state: state, ui: ui, P: P, vehicle: vehicle, now: ts });
+        window.Pad7Optical.render({ state: state, ui: ui, P: P, vehicle: vehicle, now: ui.visualTime, frameNow: ts });
         drawPlot();
       } else {
         drawSky(ts);
@@ -1176,6 +1380,12 @@
     syncFlightBar();
     syncMute();
     resize();
+    window.Pad7Room = {
+      physics: P,
+      get state() { return state; },
+      get ui() { return ui; },
+      get vehicle() { return vehicle; },
+    };
     radio("RANGE. FIRING ROOM MANNED. KESTREL I ON THE PAD. OBJECTIVE: LOW EARTH ORBIT.");
     requestAnimationFrame(loop);
   </script>

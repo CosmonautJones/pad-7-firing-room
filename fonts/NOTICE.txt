@@ -1,0 +1,3 @@
+IBM Plex Mono (c) IBM Corp. SIL Open Font License 1.1
+Teko (c) Indian Type Foundry. SIL Open Font License 1.1
+Latin subsets via Fontsource, vendored for file://.

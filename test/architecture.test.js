@@ -24,8 +24,8 @@ const html = fs.readFileSync(path.join(root, "PAD-7.html"), "utf8");
 const P = require(path.join(root, "physics.js"));
 const Audio = require(path.join(root, "audio.js"));
 
-test("composition root loads physics, three, optical, then audio", () => {
-  const order = ["physics.js", "three.min.js", "optical.js", "audio.js"].map(function (f) {
+test("composition root loads physics, three, optical, audio, then desk", () => {
+  const order = ["physics.js", "three.min.js", "optical.js", "audio.js", "desk.js"].map(function (f) {
     return html.indexOf('src="' + f + '"');
   });
   order.forEach(function (i, n) {
@@ -58,6 +58,17 @@ test("optical camera SITE is not named TRACK", () => {
   const optical = fs.readFileSync(path.join(root, "optical.js"), "utf8");
   assert.ok(optical.indexOf("downrange") !== -1);
   assert.ok(html.indexOf("VIEW AUTO") !== -1);
+});
+
+test("desk hot path keeps the lamps and readouts mounted", () => {
+  assert.ok(html.indexOf('id="clockFace"') !== -1);
+  assert.ok(html.indexOf('data-lamp="prop"') !== -1);
+  assert.ok(html.indexOf('src="desk.js"') !== -1);
+  assert.ok(html.indexOf('getElementById("telem").innerHTML') === -1);
+  assert.ok(html.indexOf('getElementById("mosaic").innerHTML') === -1);
+  assert.ok(html.indexOf("const BRIEFS") === -1);
+  assert.ok(html.indexOf("Desk.paintScope") !== -1);
+  assert.ok(html.indexOf("window.Pad7Room") !== -1);
 });
 
 console.log("\n" + passed + " passed, " + failed + " failed");
