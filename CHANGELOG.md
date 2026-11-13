@@ -1,5 +1,11 @@
 # Changelog
 
+Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version shows on the desk as **REV** under the PAD-7 mark; `node test/run.js` fails if it and the newest entry here disagree.
+
+## [0.1.0] - 2026-11-13
+
+- First numbered release. The desk shows REV 0.1.0 under the PAD-7 mark so you can tell which build is running.
+
 ## 2026-09-05
 
 - Optical window: PBR stack and pad, generated Earth, atmosphere limb, additive plume, VIEW cameras (SITE not TRACK).

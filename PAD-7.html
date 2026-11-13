@@ -92,6 +92,7 @@
     .mark { display: flex; flex-direction: column; line-height: 0.82; }
     .mark h1 { margin: 0; font-family: Teko, "Arial Narrow", Impact, sans-serif; font-size: 32px; font-weight: 600; letter-spacing: 0.1em; }
     .mark span { color: var(--brass); font-size: 9px; letter-spacing: 0.22em; }
+    .mark .rev { color: var(--brass); font-family: "IBM Plex Mono", monospace; font-size: 9px; letter-spacing: 0.22em; opacity: 0.75; margin-top: 3px; }
     .clock { text-align: center; font-family: Teko, sans-serif; font-size: 42px; letter-spacing: 0.04em; line-height: 0.86; font-variant-numeric: tabular-nums; text-shadow: 0 1px 0 #000; }
     .clock small { display: block; font-family: "IBM Plex Mono", monospace; font-size: 9px; letter-spacing: 0.28em; color: var(--brass); }
     .mast-right { justify-self: end; text-align: right; color: var(--paper-2); font-size: 11px; }
@@ -305,6 +306,7 @@
       <div class="mark">
         <span>EASTERN RANGE / COMPLEX 7</span>
         <h1>PAD-7</h1>
+        <small class="rev" id="rev" title="PAD-7 version">REV 0.1.0</small>
       </div>
       <div class="clock" id="clock" aria-live="polite"><span id="clockFace">HOLD</span><small>RANGE CLOCK</small></div>
       <div class="mast-right">

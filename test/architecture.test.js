@@ -24,6 +24,14 @@ const html = fs.readFileSync(path.join(root, "PAD-7.html"), "utf8");
 const P = require(path.join(root, "physics.js"));
 const Audio = require(path.join(root, "audio.js"));
 
+test("the desk shows the newest CHANGELOG version as REV", () => {
+  const changelog = fs.readFileSync(path.join(root, "CHANGELOG.md"), "utf8");
+  const newest = (changelog.match(/^## \[(\d+\.\d+\.\d+)\]/m) || [])[1];
+  const shown = (html.match(/id="rev"[^>]*>REV (\d+\.\d+\.\d+)</) || [])[1];
+  assert.ok(newest, "CHANGELOG.md has no ## [x.y.z] entry");
+  assert.strictEqual(shown, newest, "PAD-7.html shows REV " + shown + " but CHANGELOG's newest is " + newest);
+});
+
 test("composition root loads physics, three, optical, audio, then desk", () => {
   const order = ["physics.js", "three.min.js", "optical.js", "audio.js", "desk.js"].map(function (f) {
     return html.indexOf('src="' + f + '"');
